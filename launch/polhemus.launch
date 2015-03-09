@@ -1,0 +1,5 @@
+<launch>
+
+	<include file="$(find polhemus_ros)/launch/polhemus.launch.xml" />
+
+</launch>
