@@ -59,6 +59,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   roscpp
   kdl_parser
+  exotica
 )
 
 find_package(Boost REQUIRED COMPONENTS system)
@@ -66,7 +67,7 @@ find_package(orocos_kdl REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES polhemus_ros
-  CATKIN_DEPENDS geometry_msgs tf roscpp kdl_parser
+  CATKIN_DEPENDS geometry_msgs tf roscpp kdl_parser exotica
   DEPENDS system_lib orocos_kdl eigen
 )
 

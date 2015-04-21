@@ -145,7 +145,7 @@ int liberty_receive(usb_dev_handle *handle, buffer_t *b, void *buf, int size)
 void liberty_reset(usb_dev_handle *handle)
 {
     // reset c, this may produce "invalid command" answers
-    liberty_send(handle, "\rp\r");
+    liberty_send(handle, (char *)"\rp\r");
     // remove everything from input
     liberty_clear_input(handle);
 }

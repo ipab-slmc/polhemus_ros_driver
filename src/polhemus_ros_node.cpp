@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 	init_buffer(&buf);
 
 	/* activate binary mode */
-	liberty_send(handle, "f1\r");
+    liberty_send(handle, (char *)"f1\r");
 
 	int n_stations = request_num_of_stations(handle, &buf);
 	fprintf(stderr, "found %d stations\n", n_stations);
@@ -187,7 +187,7 @@ int main(int argc, char** argv)
 	 o* applies to all stations
 
 	 if this is changed, the station_t struct has to be edited accordingly */
-	liberty_send(handle, "o*,8,9,11,3,7\r");
+    liberty_send(handle, (char *)"o*,8,9,11,3,7\r");
 	/* set output hemisphere -- this will produce a response which we're
 	 ignoring */
 	set_hemisphere(handle, 0, 0, -1);
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
 	printf("Timestamp: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
 
 	/* enable continuous mode (get data points continously) */
-	liberty_send(handle, "c\r");
+    liberty_send(handle, (char *)"c\r");
 
 	PolhemusROS::PolhemusLiberty polhemus_liberty;
 	if (!polhemus_liberty.initialisation(n_stations))
@@ -249,7 +249,7 @@ int main(int argc, char** argv)
 		}
 	}
 	/* stop continous mode */
-	liberty_send(handle, "p");
+    liberty_send(handle, (char *)"p");
 
 	usb_close(handle);
 
