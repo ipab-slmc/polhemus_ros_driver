@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(polhemus_ros)
+cmake_minimum_required(VERSION 2.8.12)
+project(polhemus_ros_driver)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+add_compile_options(-std=c++11)
 
 if (USB_LIBRARIES AND USB_INCLUDE_DIRS)
   # in cache already
@@ -9,33 +9,33 @@ if (USB_LIBRARIES AND USB_INCLUDE_DIRS)
 else (USB_LIBRARIES AND USB_INCLUDE_DIRS)
   find_path(USB_INCLUDE_DIR
     NAMES
-      usb.h
+    usb.h
     PATHS
-      /usr/include
-      /usr/local/include
-      /opt/local/include
-      /sw/include
-  )
+    /usr/include
+    /usr/local/include
+    /opt/local/include
+    /sw/include
+    )
 
   find_library(USB_LIBRARY
     NAMES
-      usb
+    usb
     PATHS
-      /usr/lib
-      /usr/local/lib
-      /opt/local/lib
-      /sw/lib
-  )
+    /usr/lib
+    /usr/local/lib
+    /opt/local/lib
+    /sw/lib
+    )
 
   set(USB_INCLUDE_DIRS
     ${USB_INCLUDE_DIR}
-  )
+    )
   set(USB_LIBRARIES
     ${USB_LIBRARY}
-)
+    )
 
   if (USB_INCLUDE_DIRS AND USB_LIBRARIES)
-     set(USB_FOUND TRUE)
+    set(USB_FOUND TRUE)
   endif (USB_INCLUDE_DIRS AND USB_LIBRARIES)
 
   if (USB_FOUND)
@@ -53,39 +53,31 @@ else (USB_LIBRARIES AND USB_INCLUDE_DIRS)
 
 endif (USB_LIBRARIES AND USB_INCLUDE_DIRS)
 
-
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  tf
+  tf2
+  tf2_ros
   roscpp
-  kdl_parser
-  exotica
-)
+  )
 
-find_package(Boost REQUIRED COMPONENTS system)
-find_package(orocos_kdl REQUIRED)
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES polhemus_ros
-  CATKIN_DEPENDS geometry_msgs tf roscpp kdl_parser exotica
-  DEPENDS system_lib orocos_kdl eigen
-)
-
+  LIBRARIES polhemus_ros_driver
+  CATKIN_DEPENDS geometry_msgs tf2 tf2_ros roscpp
+  )
 
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
   ${USB_INCLUDE_DIRS}
-)
-link_directories(${catkin_LIBRARY_DIRS})
+  )
+link_directories(${catkin_LIBRARIES})
+
 add_library(${PROJECT_NAME} 
-	src/liberty.cpp
-)
+  src/liberty.cpp
+  )
 
+add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp src/liberty.cpp)
 
-add_executable(polhemus_ros_node src/polhemus_ros_node.cpp src/liberty.cpp src/polhemus_ros.cpp)
-
-target_link_libraries(polhemus_ros_node
+target_link_libraries(polhemus_tf_broadcaster
   ${catkin_LIBRARIES}
   ${USB_LIBRARIES}
-)
+  )
