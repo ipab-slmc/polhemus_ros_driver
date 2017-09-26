@@ -210,6 +210,8 @@ int main(int argc, char** argv) {
   
   // Start main loop
   while(ros::ok()) {
+    if (go_on == 0)
+      break;
 
     // Update polhemus
     // (***)
