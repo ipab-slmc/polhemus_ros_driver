@@ -207,7 +207,11 @@ int main(int argc, char** argv) {
 
   gettimeofday(&tv, NULL);
   printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
-  
+
+  static tf2_ros::TransformBroadcaster br;
+  geometry_msgs::TransformStamped transformStamped;
+  ros::Rate r(240);
+
   // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
@@ -216,11 +220,11 @@ int main(int argc, char** argv) {
     // Update polhemus
     // (***)
     if (!liberty_receive(handle, &buf, stations, sizeof(station_t) * nstations)) {
-      fprintf(stderr, "Recieve failed.\n");
+      fprintf(stderr, "Receive failed.\n");
       return 2;
     }
 
-    /* Note: timestamp is the time in mS after the first read to the
+    /* Note: timestamp is the time in ms after the first read to the
        system after turning it on
        at 240Hz, the time between data sample is 1/240 = .00416_
        seconds.
@@ -228,14 +232,12 @@ int main(int argc, char** argv) {
        timestamp = framecount*1000/240 (rounded down to an int)* 
     */
     
-    for (i=0; i < nstations; i++) {
-      
-      static tf2_ros::TransformBroadcaster br;
-      geometry_msgs::TransformStamped transformStamped;
+    // Header info - acquired at same time = same timestamp
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "polhemus_base";
 
+    for (i=0; i < nstations; i++) {
       // Header info
-      transformStamped.header.stamp = ros::Time::now();
-      transformStamped.header.frame_id = "polhemus_base";
       transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
 	
       // Set translation (conversion: inches -> meters)
@@ -252,13 +254,14 @@ int main(int argc, char** argv) {
       // Broadcast frame
       br.sendTransform(transformStamped);
     }
+
+    r.sleep();
   }
 
   // Shutdown
   liberty_send(handle, (char *)"p"); // stop continuous mode
   usb_close(handle);
-  free(stations);
-  stations = NULL;
+  delete[] stations;
   
   return 0;
 }
