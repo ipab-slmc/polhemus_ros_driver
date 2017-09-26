@@ -9,7 +9,7 @@ The user manual for the Polhemus Liberty can be found [here](http://polhemus.com
 Do not make changes to any files in `polhemus/etc`. Install requirements using:
 
 ```
-$ cd .../polhemus/etc
+$ cd ./etc
 $ ./install.bash
 ```
 
@@ -23,13 +23,13 @@ Note that you will require the `sudo` password.
 2. Open a new terminal.
 3. `$ roslaunch polhemus_ros_driver start.launch`
 
-Note: it may take 2/3 attempts to successfully start broadcasting `tf2` frames. 
+Note: it may take 2-3 attempts to successfully start broadcasting `tf2` frames.
 
 ## View frames
 
-Open a new terminal. Start RVIZ (`$ rviz`). 
+Open a new terminal. Start RVIZ (`$ rosrun rviz rviz`).
 
-1. Global options: change *Fixed Frame* to `polhemus_world`.
+1. Global options: change *Fixed Frame* to `polhemus_base`. Note that the Polhemus z-frame faces downwards and you need to publish a static transform to flip the orientation e.g. to polhemus_world (cf. example in launch).
 2. Add -> *By display type* -> rviz -> TF.
 
 # Launch file
@@ -38,6 +38,6 @@ The launch file `start.launch` allows you to change the zenith of the hemisphere
 
 # Requirements
 
-* ROS indigo, see `package.xml`
+* ROS Indigo, see `package.xml`
 * `libusb-dev`
 * `fxload`

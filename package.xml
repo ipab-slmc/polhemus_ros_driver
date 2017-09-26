@@ -2,32 +2,21 @@
 <package format="2">
   <name>polhemus_ros_driver</name>
   <version>0.0.1</version>
-  <description>The polhemus ROS driver package</description>
+  <description>ROS driver for Polhemus Liberty devices broadcasting tf transforms.</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="chris.mower@ed.ac.uk">chris mower</maintainer>
-  <maintainer email="yiming@todo.todo">yiming</maintainer>
+  <maintainer email="chris.mower@ed.ac.uk">Chris Mower</maintainer>
+  <maintainer email="v.ivan@ed.ac.uk">Vladimir Ivan</maintainer>
+  <maintainer email="wolfgang.merkt@ed.ac.uk">Wolfgang Merkt</maintainer>
 
+  <license>GPLv3</license> <!-- Original code was GPLv3 -->
 
-  <!-- One license tag required, multiple allowed, one license per tag -->
-  <!-- Commonly used license strings: -->
-  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <url type="repository">https://github.com/ipab-slmc/polhemus_ros_driver</url>
+  <url type="bugtracker">https://github.com/ipab-slmc/polhemus_ros_driver/issues</url>
 
-
-  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/polhemus_ros</url> -->
-
-
-  <!-- Author tags are optional, mutiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintianers, but could be -->
-  <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
-
+  <author email="yiming.yang@ed.ac.uk">Yiming Yang</author>
+  <author email="chris.mower@ed.ac.uk">Chris Mower</author>
+  <author email="v.ivan@ed.ac.uk">Vladimir Ivan</author>
+  <author email="wolfgang.merkt@ed.ac.uk">Wolfgang Merkt</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -35,4 +24,6 @@
   <depend>tf2_ros</depend>
   <depend>roscpp</depend>
   <depend>geometry_msgs</depend>
+  <depend>libusb-dev</depend>
+  <depend>fxload</depend>
 </package>
