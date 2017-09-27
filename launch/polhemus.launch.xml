@@ -1,6 +1,0 @@
-<launch>
-   <node name="PolhemusLiberty" pkg="polhemus_ros" type="polhemus_ros_node" output="screen">
-   	<param name="/BaseID" value="2"/>
-   </node>
-
-</launch>
