@@ -38,6 +38,6 @@ The launch file `start.launch` allows you to change the zenith of the hemisphere
 
 # Requirements
 
-* ROS Indigo, see `package.xml`
+* ROS Kinetic, see `package.xml`
 * `libusb-dev`
 * `fxload`
