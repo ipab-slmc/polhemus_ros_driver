@@ -125,6 +125,14 @@ static void set_hemisphere(usb_dev_handle *handle, int x, int y, int z) {
   liberty_send(handle, cmd);
 }
 
+/* causes the sensor to be electronically aligned in orientation (Azimuth Reference, Elevation Reference, Roll Reference) 
+with the user system coordinates, and establishes the boresight reference angles for the station. */
+static void calibrate_sensors(usb_dev_handle *handle, int azref, int elref, int rlref, int reset_origin) {
+  char cmd[32];
+  snprintf(cmd, sizeof(cmd), "h*,%d,%d,%d,%d\r", azref, elref, rlref, reset_origin);
+  liberty_send(handle, cmd);
+}
+
 int main(int argc, char** argv) {
 
   int i, nstations;
@@ -186,6 +194,13 @@ int main(int argc, char** argv) {
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
   set_hemisphere(handle, x_hs, y_hs, z_hs);
+
+  /* Calibrate the sensors */
+  int azref = 0;
+  int elref = 0;
+  int rlref = 0;
+  int reset_origin = 0;
+  calibrate_sensors(handle, azref, elref, rlref, reset_origin);
 
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
