@@ -35,6 +35,7 @@ add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp)
 target_link_libraries(polhemus_tf_broadcaster
   ${catkin_LIBRARIES}
   ${libusb_LIBRARIES}
+  usb-1.0
   polhemus_liberty
 )
 
