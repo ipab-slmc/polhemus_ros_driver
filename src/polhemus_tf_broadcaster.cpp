@@ -196,11 +196,7 @@ int main(int argc, char** argv) {
   set_hemisphere(handle, x_hs, y_hs, z_hs);
 
   /* Calibrate the sensors */
-  int azref = 0;
-  int elref = 0;
-  int rlref = 0;
-  int reset_origin = 0;
-  calibrate_sensors(handle, azref, elref, rlref, reset_origin);
+  liberty_send(handle, (char *)"b*,,,0,0\r");
 
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
