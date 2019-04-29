@@ -38,6 +38,7 @@
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include "polhemus_ros_driver/calibrate.h"
 
 #include "liberty.h"
 #include "protocol.h"
@@ -125,12 +126,6 @@ static void set_hemisphere(usb_dev_handle *handle, int x, int y, int z) {
   liberty_send(handle, cmd);
 }
 
-/* causes the sensor to be electronically aligned in orientation (Azimuth Reference, Elevation Reference, Roll Reference) 
-with the user system coordinates, and establishes the boresight reference angles for the station. */
-static void calibrate_sensors(usb_dev_handle *handle) {
-  liberty_send(handle, (char *)"b*,,,0,0\r");
-}
-
 int main(int argc, char** argv) {
 
   int i, nstations;
@@ -173,7 +168,30 @@ int main(int argc, char** argv) {
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
-  ros::NodeHandle nh("/polhemus_tf_broadcaster");
+  ros::NodeHandle nh;
+
+  /* Calibrate the sensors: causes the sensor to be electronically aligned in orientation (Azimuth Reference,
+  Elevation Reference, Roll Reference) with the user system coordinates, and establishes the boresight
+  reference angles for the station. */
+  ros::ServiceClient client = nh.serviceClient<polhemus_ros_driver::calibrate>("calibration");
+  polhemus_ros_driver::calibrate calibration_srv;
+  calibration_srv.request.station = "*";
+  calibration_srv.request.azref = "";
+  calibration_srv.request.elref = "";
+  calibration_srv.request.rlref = "0";
+  calibration_srv.request.reset_origin = false;
+  if (client.call(calibration_srv))
+  {
+    if (calibration_srv.response.success == 0)
+    {
+      ROS_INFO("Sensors were calibrated successfully: %d", calibration_srv.response.success);
+    }
+  }
+  else
+  {
+    ROS_ERROR("Failed to call calibration service");
+    return 1;
+  }
 
 
   /* define which information to get per sensor (called a station
@@ -193,9 +211,6 @@ int main(int argc, char** argv) {
   nh.getParam("/z_hs", z_hs);
   set_hemisphere(handle, x_hs, y_hs, z_hs);
 
-  /* Calibrate the sensors */
-  calibrate_sensors(handle);
-	
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
   liberty_clear_input(handle); //right now, we just ignore the answer

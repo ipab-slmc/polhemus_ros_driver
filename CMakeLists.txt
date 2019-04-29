@@ -18,14 +18,19 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
-catkin_package(
-  LIBRARIES polhemus_liberty
-  CATKIN_DEPENDS geometry_msgs tf2 tf2_ros roscpp
-)
-
 add_service_files(
   FILES
   calibrate.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+
+catkin_package(
+  LIBRARIES polhemus_liberty
+  CATKIN_DEPENDS geometry_msgs tf2 tf2_ros roscpp
 )
 
 include_directories(
@@ -44,6 +49,11 @@ target_link_libraries(polhemus_tf_broadcaster
   usb-1.0
   polhemus_liberty
 )
+add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_gencpp)
+
+add_executable(calibration_server src/calibration_server.cpp)
+target_link_libraries(calibration_server ${catkin_LIBRARIES} ${libusb_LIBRARIES} polhemus_liberty)
+add_dependencies(calibration_server polhemus_ros_driver_gencpp)
 
 install(TARGETS polhemus_tf_broadcaster polhemus_liberty
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
