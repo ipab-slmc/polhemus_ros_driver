@@ -15,11 +15,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   roscpp
+  message_generation
 )
 
 catkin_package(
   LIBRARIES polhemus_liberty
   CATKIN_DEPENDS geometry_msgs tf2 tf2_ros roscpp
+)
+
+add_service_files(
+  FILES
+  calibrate.srv
 )
 
 include_directories(

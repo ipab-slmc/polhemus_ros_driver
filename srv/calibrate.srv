@@ -1,0 +1,9 @@
+string station # 1 to 16, which specifies the relevant source/sensor pair
+int azref # The azimuth reference angle
+int elref # The elevation reference angle
+int rlref # The roll reference angle
+int reset_origin # A switch to enable/disable setting the X, Y and Z origin values to 0,0,0 upon boresight. 0 = disable the origin reset. 1 = reset origin upon boresight. Default is 0.
+
+---
+
+bool success   # indicate successful run of calibration
