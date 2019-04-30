@@ -51,10 +51,6 @@ target_link_libraries(polhemus_tf_broadcaster
 )
 add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_gencpp)
 
-add_executable(calibration_server src/calibration_server.cpp)
-target_link_libraries(calibration_server ${catkin_LIBRARIES} ${libusb_LIBRARIES} polhemus_liberty)
-add_dependencies(calibration_server polhemus_ros_driver_gencpp)
-
 install(TARGETS polhemus_tf_broadcaster polhemus_liberty
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
