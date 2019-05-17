@@ -136,22 +136,26 @@ static void set_hemisphere(usb_dev_handle *handle, int x, int y, int z) {
 /* Calibrate the sensors: causes the sensor to be electronically aligned in orientation (Azimuth Reference,
 Elevation Reference, Roll Reference) with the user system coordinates, and establishes the boresight
 reference angles for the station. */
-bool calibrate(polhemus_ros_driver::calibrate::Request  &req, polhemus_ros_driver::calibrate::Response &res)
+bool calibrate(std::string station, std::string azref, std::string elref, std::string rlref, bool reset_origin)
 {
   if (!handle) {
     fprintf(stderr, "Could not get a handle to the Polhemus Liberty device.\n");
-    res.success = false;
     return false;
   }
   std::string cmd = "";
-  cmd = "b" + req.station + "," + req.azref + "," + req.elref + "," + req.rlref +  "," ;
-  cmd += req.reset_origin ? "1" : "0";
+  cmd = "b" + station + "," + azref + "," + elref + "," + rlref +  "," ;
+  cmd += reset_origin ? "1" : "0";
   cmd += "\r";
   ROS_INFO("Calibration request: %s\n",cmd.c_str());
   mtx.lock();
   liberty_send(handle, (char *)cmd.c_str());
   mtx.unlock();
-  res.success = true;
+  return true;
+}
+
+bool calibrate(polhemus_ros_driver::calibrate::Request  &req, polhemus_ros_driver::calibrate::Response &res)
+{
+  res.success = calibrate(req.station, req.azref, req.elref, req.rlref, req.reset_origin);
   return true;
 }
 
@@ -219,6 +223,9 @@ int main(int argc, char** argv) {
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
   set_hemisphere(handle, x_hs, y_hs, z_hs);
+
+  /* Calibrate the sensors */
+  calibrate("*", "", "", "0", false);
 
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
@@ -288,6 +295,7 @@ int main(int argc, char** argv) {
       br.sendTransform(transformStamped);
     }
 
+    ros::spinOnce();
     r.sleep();
   }
 
