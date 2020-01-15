@@ -32,6 +32,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
+#include <mutex>
 
 #include <sys/time.h>
 #include <time.h>
@@ -39,6 +40,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include "polhemus_ros_driver/calibrate.h"
 #include "liberty.h"
 #include "protocol.h"
 
@@ -63,6 +65,12 @@ static int count_bits(uint16_t v) {
 
 /* main loop running? */
 static int go_on;
+
+/* mutex for liberty_send */
+std::mutex mtx;
+
+/* Handle to communicate with device*/
+usb_dev_handle *handle;
 
 static void signal_handler(int s) {
   switch (s) {
@@ -125,10 +133,30 @@ static void set_hemisphere(usb_dev_handle *handle, int x, int y, int z) {
   liberty_send(handle, cmd);
 }
 
-/* causes the sensor to be electronically aligned in orientation (Azimuth Reference, Elevation Reference, Roll Reference) 
-with the user system coordinates, and establishes the boresight reference angles for the station. */
-static void calibrate_sensors(usb_dev_handle *handle) {
-  liberty_send(handle, (char *)"b*,,,0,0\r");
+/* Calibrate the sensors: causes the sensor to be electronically aligned in orientation (Azimuth Reference,
+Elevation Reference, Roll Reference) with the user system coordinates, and establishes the boresight
+reference angles for the station. */
+bool calibrate(std::string station, std::string azref, std::string elref, std::string rlref, bool reset_origin)
+{
+  if (!handle) {
+    fprintf(stderr, "Could not get a handle to the Polhemus Liberty device.\n");
+    return false;
+  }
+  std::string cmd = "";
+  cmd = "b" + station + "," + azref + "," + elref + "," + rlref +  "," ;
+  cmd += reset_origin ? "1" : "0";
+  cmd += "\r";
+  ROS_INFO("Calibration request: %s\n",cmd.c_str());
+  mtx.lock();
+  liberty_send(handle, (char *)cmd.c_str());
+  mtx.unlock();
+  return true;
+}
+
+bool calibrate(polhemus_ros_driver::calibrate::Request  &req, polhemus_ros_driver::calibrate::Response &res)
+{
+  res.success = calibrate(req.station, req.azref, req.elref, req.rlref, req.reset_origin);
+  return true;
 }
 
 int main(int argc, char** argv) {
@@ -136,7 +164,6 @@ int main(int argc, char** argv) {
   int i, nstations;
   double x_hs, y_hs, z_hs;
   struct usb_device *dev;
-  usb_dev_handle *handle;
   buffer_t buf;
   struct timeval tv;
 
@@ -173,7 +200,11 @@ int main(int argc, char** argv) {
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
-  ros::NodeHandle nh("/polhemus_tf_broadcaster");
+  ros::NodeHandle nh;
+
+  // Calibration service
+  ros::ServiceServer service = nh.advertiseService("calibration", calibrate);
+  ROS_INFO("Service ready to calibrate the sensors.");
 
 
   /* define which information to get per sensor (called a station
@@ -194,8 +225,8 @@ int main(int argc, char** argv) {
   set_hemisphere(handle, x_hs, y_hs, z_hs);
 
   /* Calibrate the sensors */
-  calibrate_sensors(handle);
-	
+  calibrate("*", "", "", "0", false);
+
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
   liberty_clear_input(handle); //right now, we just ignore the answer
@@ -264,6 +295,7 @@ int main(int argc, char** argv) {
       br.sendTransform(transformStamped);
     }
 
+    ros::spinOnce();
     r.sleep();
   }
 

@@ -15,6 +15,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   roscpp
+  message_generation
+)
+
+add_service_files(
+  FILES
+  calibrate.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 catkin_package(
@@ -38,6 +49,7 @@ target_link_libraries(polhemus_tf_broadcaster
   usb-1.0
   polhemus_liberty
 )
+add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_gencpp)
 
 install(TARGETS polhemus_tf_broadcaster polhemus_liberty
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
