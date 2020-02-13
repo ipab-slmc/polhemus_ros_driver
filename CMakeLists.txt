@@ -4,10 +4,11 @@ project(polhemus_ros_driver)
 add_compile_options(-std=c++11)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(libusb libusb QUIET)
 
-if(NOT ${libusb_FOUND})
-  message(FATAL_ERROR "Could not find libusb-dev")
+pkg_check_modules(libusb-1.0 libusb-1.0 QUIET)
+
+if(NOT ${libusb_1_FOUND})
+  message(FATAL_ERROR "Could not find libusb1")
 endif()
 
 find_package(catkin REQUIRED COMPONENTS
@@ -18,27 +19,35 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-  LIBRARIES polhemus_liberty
+  INCLUDE_DIRS include
+  LIBRARIES polhemus
   CATKIN_DEPENDS geometry_msgs tf2 tf2_ros roscpp
 )
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
-  ${libusb_INCLUDE_DIRS}
+  ${LIBUSB_1_INCLUDE_DIRS}
 )
 
-add_library(polhemus_liberty
+add_library(polhemus
   src/liberty.cpp
+  src/viper.cpp
+  src/polhemus.cpp
 )
 
 add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp)
 target_link_libraries(polhemus_tf_broadcaster
   ${catkin_LIBRARIES}
-  ${libusb_LIBRARIES}
-  polhemus_liberty
+  ${LIBUSB_1_LIBRARIES}
+  usb-1.0
+  polhemus
 )
 
-install(TARGETS polhemus_tf_broadcaster polhemus_liberty
+install(DIRECTORY include/polhemus_ros_driver
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
+install(TARGETS polhemus_tf_broadcaster polhemus
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-install(FILES launch/start.launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)
+install(FILES launch/start.launch 
+   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch)

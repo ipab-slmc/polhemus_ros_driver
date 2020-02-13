@@ -5,4 +5,5 @@
   <param name="x_hs" value="0" type="double"/>
   <param name="y_hs" value="0" type="double"/>
   <param name="z_hs" value="-1" type="double"/>
+  <param name="product_type" value="viper" type="string"/>
 </launch>

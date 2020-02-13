@@ -25,28 +25,28 @@
 #ifndef LIBERTY_H
 #define LIBERTY_H
 
-#include <usb.h>
+#include <polhemus_ros_driver/polhemus.hpp>
+#include "polhemus_ros_driver/liberty_protocol.h"
+#include <libusb-1.0/libusb.h>
 
-typedef struct buffert_t {
-    char buf[8192];
-    int fill;
-} buffer_t;
 
-void init_buffer(buffer_t *b);
+#define LIBERTY_ENDPOINT_IN 0x88
+#define LIBERTY_ENDPOINT_OUT 0x4
 
-/* set up usb interface and configuration, send initial magic and reset */
-int liberty_init(usb_dev_handle *handle);
-/* send a command */
-int liberty_send(usb_dev_handle *handle, char *cmd);
-/* receive a packet of size bytes */
-int liberty_receive(usb_dev_handle *handle, buffer_t *b, void *buf, int size);
-/* disable previous `c' commands and empty input buffer */
-void liberty_reset(usb_dev_handle *handle);
-
-/* read until the device doesn't send anything else */
-void liberty_clear_input(usb_dev_handle *handle);
-void liberty_ignore_input(usb_dev_handle *handle, int count);
-
-int liberty_read(usb_dev_handle *handle, void *buf, int size, int timeout);
-
+class Liberty : public Polhemus {
+public:
+  Liberty(void);
+	~Liberty(void);
+	int request_num_of_stations(void);
+	void device_reset(void);
+	void device_binary_mode(void);
+	void device_data_mode(data_mode_e mode);
+	void receive_pno_data(void);
+	void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+	void generate_data_structure(void);
+	void define_quat_data_type(void);
+	void set_hemisphere(int x, int y, int z);
+private:
+	liberty_pno_frame_t *stations;
+};
 #endif

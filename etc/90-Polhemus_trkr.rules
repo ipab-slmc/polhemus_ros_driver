@@ -30,6 +30,8 @@ RUN+="/sbin/fxload -t fx -D %N -I /usr/local/share/PolhemusUsb/LbtyUsb.hex -s /u
 # Liberty Legacy -- Permissions
 ATTR{idVendor}=="0f44", ATTR{idProduct}=="ff12",ACTION=="add",MODE="0666"
 
+# Viper -- Permissions
+ATTR{idVendor}=="0f44", ATTR{idProduct}=="bf01",ACTION=="add",MODE="0666"
 
 # Fastrak -- Load FW
 ATTR{idVendor}=="0f44", ATTR{idProduct}=="0001",ACTION=="add", \
