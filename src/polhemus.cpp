@@ -1,27 +1,7 @@
-
 /*
-
- Communication library for a Polhemus Liberty v2 (tm) Motion tracker
- Copyright (C) 2008 Jonathan Kleinehellefort <kleinehe@cs.tum.edu>
-     Intelligent Autonomous Systems Lab,
-     Lehrstuhl fuer Informatik 9, Technische Universitaet Muenchen
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-
+* Copyright (C) 2018 Shadow Robot Company Ltd - All Rights Reserved. Proprietary and Confidential.
+* Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 */
-
 
 
 #include <polhemus_ros_driver/polhemus.hpp>
@@ -60,7 +40,6 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   int nActual = 0;
   int r = 0;
   r = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
-  fprintf(stderr, "return code %d.\n\n", r);
   if (r)
   {
     //r = (r << 16) | E_VPERR_LIBUSB
@@ -131,9 +110,13 @@ int Polhemus::device_read(uint8_t *pbuf, int &size, bool bTOisErr)
 
 void Polhemus::device_clear_input(void)
 {
-//  uint8_t buf[1024];
-//
-//    while(device_read(buf, sizeof(buf), TIMEOUT) > 0);
+  uint8_t buf[1024];
+  g_nrxcount = RX_BUF_SIZE;
+
+  while(g_nrxcount > 0)
+  {
+    device_read(g_rxbuf, g_nrxcount, true);
+  }
 }
 
 void Polhemus::device_ignore_input(int count)
@@ -189,7 +172,7 @@ int Polhemus::device_receive(void *buf, int size)
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
-void Polhemus::device_reset(void)
+int Polhemus::device_reset(void)
 {
 }
 

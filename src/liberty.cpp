@@ -36,8 +36,6 @@
 
 Liberty::Liberty(void) : Polhemus()
 {
-  endpoint_in = LIBERTY_ENDPOINT_IN;
-  endpoint_out = LIBERTY_ENDPOINT_OUT;
 }
 Liberty::~Liberty(void) {}
 
@@ -46,7 +44,7 @@ Liberty::~Liberty(void) {}
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
-void Liberty::device_reset(void)
+int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
   unsigned char command[] = "\rp\r";

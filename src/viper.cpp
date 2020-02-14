@@ -1,27 +1,7 @@
-
 /*
-
- Communication library for a Polhemus Liberty v2 (tm) Motion tracker
- Copyright (C) 2008 Jonathan Kleinehellefort <kleinehe@cs.tum.edu>
-     Intelligent Autonomous Systems Lab,
-     Lehrstuhl fuer Informatik 9, Technische Universitaet Muenchen
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-
+* Copyright (C) 2018 Shadow Robot Company Ltd - All Rights Reserved. Proprietary and Confidential.
+* Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 */
-
 
 #include <polhemus_ros_driver/viper.hpp>
 
@@ -38,30 +18,19 @@
 
 Viper::Viper(void) : Polhemus()
 {
-  endpoint_in = VIPER_ENDPOINT_IN;
-  endpoint_out = VIPER_ENDPOINT_OUT;
 }
 Viper::~Viper(void) {}
 
-/** this resets previous `c' commands and puts the device in binary mode
- *
- *  beware: the device can be misconfigured in other ways too, though this will
- *  usually work
- */
-void Viper::device_reset(void)
+int Viper::device_reset(void)
 {
-  ;
+  int retval = device_data_mode(DATA_RESET);
+  device_clear_input();
+  return retval;
 }
 
-void Viper::device_binary_mode(void)
-{
-  // viper is binary mode only
-  ;
-}
 
 int Viper::device_data_mode(data_mode_e mode)
 {
-
   viper_cmds_e cmd_type;
   viper_cmd_actions_e action;
   CVPcmd viper_command;
@@ -89,7 +58,7 @@ int Viper::device_data_mode(data_mode_e mode)
   int retval = device_send(pbuf, nBytes);
   if (retval)
   {
-    ;
+    fprintf(stderr, "retval %d.\n\n", retval);
   }
   else
   {
@@ -100,10 +69,7 @@ int Viper::device_data_mode(data_mode_e mode)
     {
 
       CFrameInfo fi(g_rxbuf, g_nrxcount);
-      fprintf(stderr, "cmd data mode %d .\n\n", fi.cmd());
-      fprintf(stderr, "action data mode %d .\n\n", fi.action());
-
-      if ((fi.cmd() != CMD_CONTINUOUS_PNO) || !(fi.IsAck()))
+      if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
       {
         retval = -1;
       }
@@ -115,50 +81,32 @@ int Viper::device_data_mode(data_mode_e mode)
 
 int Viper::receive_pno_data(void)
 {
-  fprintf(stderr, "receive pno data.\n\n");
   int retval = 0;
   g_nrxcount = RX_BUF_SIZE;
   retval = device_read(g_rxbuf, g_nrxcount, true);
-  fprintf(stderr, "pno byte count %d .\n\n", g_nrxcount);
-  for (std::size_t i = 0; i < g_nrxcount; i++)
-  {
-    fprintf(stderr, "%d ", g_rxbuf[i]);
-  }
 
   if (retval == 0)
   {
     CFrameInfo fi(g_rxbuf, g_nrxcount);
 
-    if (true)
-    {
-      uint32_t bytesextracted;
-      bytesextracted = pno.Extractseupno(fi.PPnoBody());
+    uint32_t bytesextracted;
+    bytesextracted = pno.Extractseupno(fi.PPnoBody());
 
-      if (bytesextracted)
-      {
-        fprintf(stderr, "bytes extracted.\n\n");;
-      }
-      else
-      {
-        retval = -1;
-      }
+    if (!bytesextracted)
+    {
+      retval = -1;
     }
   }
-  fprintf(stderr, "pno final retval %d .\n\n", retval);
   return retval;
 }
 
 void Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
 {
   // Set translation (in metres)
-  fprintf(stderr, "in filling data routine.\n\n");
-  uint32_t val = pno.SensorCount();
-  fprintf(stderr, "in filling data routine %d.\n\n", val);
 
   transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
   transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
   transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
-  fprintf(stderr, "still here.\n\n");
   // Set rotation
   transform->transform.rotation.w = pno.SensFrame(station_id)->pno.ori[0];
   transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
@@ -169,7 +117,6 @@ void Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int statio
 int Viper::define_quat_data_type(void)
 {
   int retval = 0;
-  fprintf(stderr, "define quat type.\n\n");
   viper_cmds_e cmd_type = CMD_UNITS;
   viper_cmd_actions_e action = CMD_ACTION_SET;
 
@@ -193,17 +140,15 @@ int Viper::define_quat_data_type(void)
 
     if (retval == 0)
     {
-      fprintf(stderr, "look at frame info, quat request.\n\n");
       CFrameInfo fi(g_rxbuf, g_nrxcount);
-      fprintf(stderr, "cmd quat%d .\n\n", fi.cmd());
-      fprintf(stderr, "action quat%d .\n\n", fi.action());
+
       if ((fi.cmd() != CMD_UNITS) || !(fi.IsAck()))
       {
         retval = -1;
       }
     }
   }
-  fprintf(stderr, "return code quat %d.\n\n", retval);
+
   return retval;
 }
 
@@ -235,7 +180,7 @@ int Viper::request_num_of_stations(void)
     if (retval == 0)
     {
       CFrameInfo fi(g_rxbuf, g_nrxcount);
-      fprintf(stderr, "cmd %d .\n\n", fi.cmd());
+
       if (fi.cmd() == CMD_STATION_MAP)
       {
         CStationMap cmap((viper_station_map_t*) fi.PCmdPayload());
@@ -244,17 +189,15 @@ int Viper::request_num_of_stations(void)
       }
     }
   }
-  int station_count = cstamap.SnsDetectedCount();
-  fprintf(stderr, "station count %d.\n\n", station_count);
 
-  return station_count;
+  station_count = cstamap.SnsDetectedCount();
+  return retval;
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Viper::set_hemisphere(int x, int y, int z)
 {
   int retval = 0;
-  fprintf(stderr, "set hemisphere.\n\n");
   viper_cmds_e cmd_type = CMD_HEMISPHERE;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_hemisphere_config_t cfg;
@@ -279,10 +222,7 @@ int Viper::set_hemisphere(int x, int y, int z)
 
     if (retval == 0)
     {
-      fprintf(stderr, "look at frame info.\n\n");
       CFrameInfo fi(g_rxbuf, g_nrxcount);
-      fprintf(stderr, "cmd hem%d .\n\n", fi.cmd());
-      fprintf(stderr, "action hem%d .\n\n", fi.action());
 
       if ((fi.cmd() != CMD_HEMISPHERE) || !(fi.IsAck()))
       {

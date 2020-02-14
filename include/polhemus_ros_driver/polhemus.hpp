@@ -1,26 +1,7 @@
 /*
-
- Communication library for a Polhemus Liberty v2 (tm) Motion tracker
- Copyright (C) 2008 Jonathan Kleinehellefort <kleinehe@cs.tum.edu>
-     Intelligent Autonomous Systems Lab,
-     Lehrstuhl fuer Informatik 9, Technische Universitaet Muenchen
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-
+* Copyright (C) 2018 Shadow Robot Company Ltd - All Rights Reserved. Proprietary and Confidential.
+* Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 */
-
 
 #ifndef POLHEMUS_H
 #define POLHEMUS_H
@@ -76,7 +57,7 @@ public:
 
 	int device_read(uint8_t *pbuf, int &count, bool bTOisErr/*=false*/);
 	int device_write(uint8_t *buf, int size, int timeout);
-	void device_reset(void);
+	virtual int device_reset(void);
 	virtual int define_quat_data_type(void);
 	virtual void generate_data_structure(void);
 	virtual int set_hemisphere(int x, int y, int z);

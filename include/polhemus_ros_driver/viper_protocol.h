@@ -1,27 +1,7 @@
-
 /*
-
- Communication library for a Polhemus Viper (tm) Motion tracker
- Copyright (C) 2008 Jonathan Kleinehellefort <kleinehe@cs.tum.edu>
-     Intelligent Autonomous Systems Lab,
-     Lehrstuhl fuer Informatik 9, Technische Universitaet Muenchen
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 3 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License
- along with this program; if not, write to the Free Software
- Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
-
+* Copyright (C) 2018 Shadow Robot Company Ltd - All Rights Reserved. Proprietary and Confidential.
+* Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 */
-
 
 #ifndef VIPER_PROTOCOL_H
 #define VIPER_PROTOCOL_H
@@ -63,20 +43,20 @@ typedef struct __attribute__((packed)) viper_full_header_t
     viper_header_t command_header;
 } viper_full_header_t;
 
-typedef struct viper_pno_data_t
+typedef struct __attribute__((packed)) viper_pno_data_t
 {
     float pos[3];
     float ori[4];
 }viper_pno_data_t;
 
-typedef struct viper_pno_data_a_t
+typedef struct __attribute__((packed)) viper_pno_data_a_t
 {
     float pos[3];
     int16_t ori[4];
     int16_t acc;
 }viper_pno_data_a_t;
 
-typedef struct viper_sensor_frame_info_t
+typedef struct __attribute__((packed)) viper_sensor_frame_info_t
 {
     uint32_t    bfSnum       : 7;
     uint32_t    bfSvirt      : 1;
@@ -88,19 +68,19 @@ typedef struct viper_sensor_frame_info_t
     uint32_t    bfAuxInput   : 10;
 } viper_sensor_frame_info_t;
 
-typedef struct vipser_sensor_frame_data_t
+typedef struct __attribute__((packed)) vipser_sensor_frame_data_t
 {
     viper_sensor_frame_info_t SFinfo;  // 4 bytes
     viper_pno_data_t pno;    // 28 bytes
 }viper_sensor_frame_data_t;
 
-typedef struct vipser_sensor_frame_data_a_t
+typedef struct __attribute__((packed)) vipser_sensor_frame_data_a_t
 {
     viper_sensor_frame_info_t SFinfo;  // 4 bytes
     viper_pno_data_a_t pno_a;    // 28 bytes
 }viper_sensor_frame_data_a_t;
 
-typedef struct viper_hpo_info_t
+typedef struct __attribute__((packed)) viper_hpo_info_t
 {
     uint32_t bfPnoMode : 4;
     uint32_t bfReserved0 : 4;
@@ -116,7 +96,7 @@ typedef struct __attribute__((packed)) viper_pno_header_t
     uint32_t sensor_count;
 } viper_pno_header_t;
 
-typedef struct viper_pno_t
+typedef struct __attribute__((packed)) viper_pno_t
 {
     viper_frame_header_t hdr;
     viper_pno_header_t seupno;
@@ -189,7 +169,7 @@ typedef enum viper_cmds_e
   CMD_MAX
 } viper_cmds_e;
 
-typedef struct viper_station_map_t
+typedef struct __attribute__((packed)) viper_station_map_t
 {
     union
     {
@@ -203,19 +183,19 @@ typedef struct viper_station_map_t
     };
 }viper_station_map_t;
 
-typedef struct viper_units_config_t
+typedef struct __attribute__((packed)) viper_units_config_t
 {
     uint32_t pos_units;
     uint32_t ori_units;
 }viper_units_config_t;
 
-typedef struct viper_hemisphere_config_t
+typedef struct __attribute__((packed)) viper_hemisphere_config_t
 {
     uint32_t track_enabled;
     float params[3];
 }viper_hemisphere_config_t;
 
-typedef struct viper_boresight_config_t
+typedef struct __attribute__((packed)) viper_boresight_config_t
 {
     float params[4];
 }viper_boresight_config_t;
@@ -761,19 +741,10 @@ public:
     //if (ph->preamble != VIPER_PNO_PREAMBLE)
     //  return 0;
 
-    fprintf(stderr, "\n\n");
-
-    for (int i = 0; i < 92; i++)
-    {
-      fprintf(stderr, "%u ", p[i]);
-    }
-
     Init();
     uint32_t index = 0;
-    //memcpy(&hdr, ph, sizeof(viper_frame_header_t)); index += sizeof(viper_frame_header_t);
+
     memcpy(&seupno, &p[index], sizeof(viper_pno_header_t)); index += sizeof(viper_pno_header_t);
-    fprintf(stderr, "in the matrix.\n\n");
-    fprintf(stderr, "sensor count %d.\n\n", seupno.sensor_count);
     for (uint32_t i = 0; i < seupno.sensor_count; i++)
     {
       memcpy(&sarr[i], &p[index], sizeof(viper_sensor_frame_data_t)); index += sizeof(viper_sensor_frame_data_t);

@@ -145,7 +145,7 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
 }
 
 
-int CreateVidPidList(libusb_context* pctx, libusb_device **&devlist, uint16_t vid, uint16_t pid,
+int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid, uint16_t pid,
                      vp_usbdevinfo arrDevInfo[], std::size_t &arrcount)
 {
   int r = 0;
@@ -190,7 +190,7 @@ int CreateVidPidList(libusb_context* pctx, libusb_device **&devlist, uint16_t vi
   return r;
 }
 
-int DiscoverVidPid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16_t vid, uint16_t pid)
+int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16_t vid, uint16_t pid)
 {
 
   int r = 0;
@@ -205,7 +205,7 @@ int DiscoverVidPid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16
   std::size_t arrcount = VPUSB_MAX_DISCOVERABLE;
   libusb_device **devlist;
 
-  if ((r = CreateVidPidList(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
+  if ((r = create_vip_list(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
     return r;
 
   for (int d = 0; d < (int) arrcount; d++)
@@ -278,15 +278,24 @@ int main(int argc, char** argv) {
 
   int i, nstations;
   double x_hs, y_hs, z_hs;
-  struct libusb_device *dev;
   struct timeval tv;
   uint16_t product_id;
   std::string product_type;
   Polhemus *device;
+  int retval = 0;
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
   ros::NodeHandle nh("/polhemus_tf_broadcaster");
+
+  retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, VIPER_PRODUCT);
+
+  if (retval)
+  {
+    //error connecting
+    fprintf(stderr, "Error connecting to device.\n\n");
+    return 1;
+  }
 
   nh.getParam("/product_type", product_type);
   if (product_type == "liberty")
@@ -307,22 +316,30 @@ int main(int argc, char** argv) {
 	  abort();
   }
 
-  int r = DiscoverVidPid(&g_usbhnd, g_usbinfo, VENDOR, VIPER_PRODUCT);
-  fprintf(stderr, "Discovered vippid.\n\n");
+  device->endpoint_in = g_usbinfo.ep_in;
+  device->endpoint_out = g_usbinfo.ep_out;
 
-  if (r)
+  device->device_handle = g_usbhnd;
+
+  retval = device->device_reset();
+  if (retval)
   {
-    //error connecting
-    fprintf(stderr, "Error connecting to device.\n\n");
+    fprintf(stderr, "Error resetting device.\n\n");
     return 1;
   }
 
-
-  device->device_handle = g_usbhnd;
-  device->init_buffer();
   device->device_binary_mode(); // activate binary mode
-  nstations = device->request_num_of_stations();
-  fprintf(stderr, "Found %d stations.\n\n", nstations);
+  retval = device->request_num_of_stations();
+  if (retval)
+  {
+    fprintf(stderr, "Error reading number of stations.\n\n");
+    return 1;
+  }
+  else
+  {
+    fprintf(stderr, "Found %d stations.\n\n", device->station_count);
+    nstations = device->station_count;
+  }
 
   /* define which information to get per sensor (called a station
      by polhemus)
@@ -331,7 +348,13 @@ int main(int argc, char** argv) {
 
      if this is changed, the station_t struct or (***) below has to be edited accordingly 
   */
-  device->define_quat_data_type();
+  retval = device->define_quat_data_type();
+  printf("Setting data type to quaternion\n");
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data type.\n\n");
+    return 1;
+  }
 
   /* set output hemisphere -- this will produce a response which we're
      ignoring
@@ -339,13 +362,20 @@ int main(int argc, char** argv) {
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
-  device->set_hemisphere(x_hs, y_hs, z_hs);
+
+  printf("Setting the output hemisphere\n");
+  retval = device->set_hemisphere(x_hs, y_hs, z_hs);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting hemisphere.\n\n");
+    return 1;
+  }
 
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
 //  device->device_clear_input(); //right now, we just ignore the answer
-//
-//  device->generate_data_structure();
+
+  device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
   signal(SIGINT, signal_handler);
@@ -353,7 +383,13 @@ int main(int argc, char** argv) {
   go_on = 1;
 
   /* enable continuous mode (get data points continously) */
-  device->device_data_mode(DATA_CONTINUOUS);
+  printf("Enabling continuous data mode...\n");
+  retval = device->device_data_mode(DATA_CONTINUOUS);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data mode to continuous.\n\n");
+    return 1;
+  }
 
   gettimeofday(&tv, NULL);
   printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
@@ -383,10 +419,9 @@ int main(int argc, char** argv) {
     transformStamped.header.stamp = ros::Time::now();
     transformStamped.header.frame_id = "polhemus_base";
 
-    for (i=0; i < nstations; i++) {
-      transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
-      // Header info
-      fprintf(stderr, "filling data.\n\n");
+    for (i=0; i < nstations; i++)
+    {
+      transformStamped.child_frame_id = "polhemus_sensor_" + std::to_string(i+1);
       device->fill_pno_data(&transformStamped, i);
 
       // Broadcast frame
@@ -398,6 +433,7 @@ int main(int argc, char** argv) {
 
   // Shutdown
   device->device_data_mode(DATA_RESET); // stop continuous mode
+  libusb_close(g_usbhnd);
   delete device;
 
   return 0;
