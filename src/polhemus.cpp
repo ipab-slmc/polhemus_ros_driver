@@ -69,11 +69,11 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   {
     size = nActual;
     r = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
-
+    fprintf(stderr, "write count wrong.\n\n");
   }
   else if ((nActual % MAX_PACKET_SIZE) == 0)
   {
-    fprintf(stderr, "here 5.\n\n");
+    fprintf(stderr, "larger than max packet size.\n\n");
     r = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
   return r;
@@ -102,7 +102,6 @@ int Polhemus::device_init(void)
 
 int Polhemus::device_send(uint8_t *cmd, int &count)
 {
-  fprintf(stderr, "here 3.\n\n");
   if (device_write(cmd, count, TIMEOUT) != count)
   {
     warn("sending cmd `%s' to device failed\n");
@@ -125,7 +124,6 @@ int Polhemus::device_read(uint8_t *pbuf, int &size, bool bTOisErr)
   } else
   {
     size = nActual;
-    fprintf(stderr, "here: size %d .\n\n", size);
   }
 
   return retval;
@@ -200,11 +198,11 @@ int Polhemus::request_num_of_stations(void)
 	return 0;
 }
 
-void Polhemus::set_hemisphere(int x, int y, int z)
+int Polhemus::set_hemisphere(int x, int y, int z)
 {
 }
 
-void Polhemus::define_quat_data_type(void)
+int Polhemus::define_quat_data_type(void)
 {
 }
 
@@ -216,7 +214,7 @@ void Polhemus::generate_data_structure(void)
 {
 }
 
-void Polhemus::receive_pno_data(void)
+int Polhemus::receive_pno_data(void)
 {
 }
 
@@ -224,6 +222,6 @@ void Polhemus::fill_pno_data(geometry_msgs::TransformStamped *transform, int sta
 {
 }
 
-void Polhemus::device_data_mode(data_mode_e mode)
+int Polhemus::device_data_mode(data_mode_e mode)
 {
 }

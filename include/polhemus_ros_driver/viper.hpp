@@ -41,20 +41,19 @@ public:
   int request_num_of_stations(void);
 	void device_reset(void);
 	void device_binary_mode(void);
-	void device_data_mode(data_mode_e mode);
-	void receive_pno_data(void);
+	int device_data_mode(data_mode_e mode);
+	int receive_pno_data(void);
   void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
-	void define_quat_data_type(void);
-	void generate_data_structure(void);
-	void set_hemisphere(int x, int y, int z);
+	int define_quat_data_type(void);
+	int set_hemisphere(int x, int y, int z);
 private:
 	uint32_t calc_crc_bytes(uint8_t *data, uint32_t count);
 	void crc_16(uint32_t * crc, uint32_t data);
 	viper_full_header_t* fill_command(uint32_t cmd, uint32_t act, uint32_t arg1 = 0, uint32_t arg2 = 0,
 	                         void *payload=0, uint32_t payload_size=0);
 	void prepare_frame(uint8_t buffer[], int &txbytes);
-	viper_pno_frame_t *stations;
   void *ppayload;
   uint32_t payload_size;
+  CVPSeuPno pno;
 };
 #endif

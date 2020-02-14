@@ -68,7 +68,7 @@ void Liberty::generate_data_structure(void)
   stations = (liberty_pno_frame_t*) (malloc(sizeof(liberty_pno_frame_t) * station_count));
 }
 
-void Liberty::device_data_mode(data_mode_e mode)
+int Liberty::device_data_mode(data_mode_e mode)
 {
 
   int size;
@@ -79,21 +79,21 @@ void Liberty::device_data_mode(data_mode_e mode)
       unsigned char command[] = "c\r";
       size = sizeof(command);
       device_send(command, size);
-      return;
+      return 0;
     }
     case DATA_SINGLE:
     {
       unsigned char command[] = "p";
       size = sizeof(command);
       device_send(command, size);
-      return;
+      return 0;
     }
     default:
-      return;
+      return 0;
   }
 }
 
-void Liberty::receive_pno_data(void)
+int Liberty::receive_pno_data(void)
 {
   if (!device_receive(stations, sizeof(liberty_pno_frame_t) * station_count)) {
     fprintf(stderr, "Receive failed.\n");
@@ -114,11 +114,12 @@ void Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int stat
   transform->transform.rotation.z = stations[station_id].quaternion[3];
 }
 
-void Liberty::define_quat_data_type(void)
+int Liberty::define_quat_data_type(void)
 {
   unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
   int size = sizeof(command);
   device_send(command, size);
+  return 0;
 }
 
 int Liberty::request_num_of_stations(void)
@@ -144,11 +145,12 @@ int Liberty::request_num_of_stations(void)
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
-void Liberty::set_hemisphere(int x, int y, int z)
+int Liberty::set_hemisphere(int x, int y, int z)
 {
   unsigned char command[32];
   int size = sizeof(command);
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
   device_send(command, size);
+  return 0;
 }
 

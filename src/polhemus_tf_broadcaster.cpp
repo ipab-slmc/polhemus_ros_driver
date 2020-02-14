@@ -321,7 +321,6 @@ int main(int argc, char** argv) {
   device->device_handle = g_usbhnd;
   device->init_buffer();
   device->device_binary_mode(); // activate binary mode
-  fprintf(stderr, "here 1.\n\n");
   nstations = device->request_num_of_stations();
   fprintf(stderr, "Found %d stations.\n\n", nstations);
 
@@ -332,72 +331,74 @@ int main(int argc, char** argv) {
 
      if this is changed, the station_t struct or (***) below has to be edited accordingly 
   */
-//  device->define_quat_data_type();
-//
-//  /* set output hemisphere -- this will produce a response which we're
-//     ignoring
-//  */
-//  nh.getParam("/x_hs", x_hs);
-//  nh.getParam("/y_hs", y_hs);
-//  nh.getParam("/z_hs", z_hs);
-//  device->set_hemisphere(x_hs, y_hs, z_hs);
-//
-//  /* switch output to centimeters */
-//  //liberty_send(handle, "u1\r");
+  device->define_quat_data_type();
+
+  /* set output hemisphere -- this will produce a response which we're
+     ignoring
+  */
+  nh.getParam("/x_hs", x_hs);
+  nh.getParam("/y_hs", y_hs);
+  nh.getParam("/z_hs", z_hs);
+  device->set_hemisphere(x_hs, y_hs, z_hs);
+
+  /* switch output to centimeters */
+  //liberty_send(handle, "u1\r");
 //  device->device_clear_input(); //right now, we just ignore the answer
 //
 //  device->generate_data_structure();
-//
-//  /* set up signal handler to catch the interrupt signal */
-//  signal(SIGINT, signal_handler);
-//
-//  go_on = 1;
-//
-//  /* enable continuous mode (get data points continously) */
-//  device->device_data_mode(DATA_CONTINUOUS);
-//
-//  gettimeofday(&tv, NULL);
-//  printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
-//
-//  static tf2_ros::TransformBroadcaster br;
-//  geometry_msgs::TransformStamped transformStamped;
-//  ros::Rate rate(240);
-//
-//  // Start main loop
-//  while(ros::ok()) {
-//    if (go_on == 0)
-//      break;
-//
-//    // Update polhemus
-//    // (***)
-//    device->receive_pno_data();
-//
-//    /* Note: timestamp is the time in ms after the first read to the
-//       system after turning it on
-//       at 240Hz, the time between data sample is 1/240 = .00416_
-//       seconds.
-//       The framecount is a more exact way of finding out the time:
-//       timestamp = framecount*1000/240 (rounded down to an int)*
-//    */
-//
-//    // Header info - acquired at same time = same timestamp
-//    transformStamped.header.stamp = ros::Time::now();
-//    transformStamped.header.frame_id = "polhemus_base";
-//
-//    for (i=0; i < nstations; i++) {
-//      // Header info
-//      device->fill_pno_data(&transformStamped, i);
-//
-//      // Broadcast frame
-//      br.sendTransform(transformStamped);
-//    }
-//
-//    rate.sleep();
-//  }
-//
-//  // Shutdown
-//  device->device_data_mode(DATA_RESET); // stop continuous mode
-//  delete device;
-  
+
+  /* set up signal handler to catch the interrupt signal */
+  signal(SIGINT, signal_handler);
+
+  go_on = 1;
+
+  /* enable continuous mode (get data points continously) */
+  device->device_data_mode(DATA_CONTINUOUS);
+
+  gettimeofday(&tv, NULL);
+  printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
+
+  static tf2_ros::TransformBroadcaster br;
+  geometry_msgs::TransformStamped transformStamped;
+  ros::Rate rate(240);
+
+  // Start main loop
+  while(ros::ok()) {
+    if (go_on == 0)
+      break;
+
+    // Update polhemus
+    // (***)
+    device->receive_pno_data();
+
+    /* Note: timestamp is the time in ms after the first read to the
+       system after turning it on
+       at 240Hz, the time between data sample is 1/240 = .00416_
+       seconds.
+       The framecount is a more exact way of finding out the time:
+       timestamp = framecount*1000/240 (rounded down to an int)*
+    */
+
+    // Header info - acquired at same time = same timestamp
+    transformStamped.header.stamp = ros::Time::now();
+    transformStamped.header.frame_id = "polhemus_base";
+
+    for (i=0; i < nstations; i++) {
+      transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
+      // Header info
+      fprintf(stderr, "filling data.\n\n");
+      device->fill_pno_data(&transformStamped, i);
+
+      // Broadcast frame
+      br.sendTransform(transformStamped);
+    }
+
+    rate.sleep();
+  }
+
+  // Shutdown
+  device->device_data_mode(DATA_RESET); // stop continuous mode
+  delete device;
+
   return 0;
 }

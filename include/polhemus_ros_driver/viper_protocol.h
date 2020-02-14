@@ -26,7 +26,7 @@
 #ifndef VIPER_PROTOCOL_H
 #define VIPER_PROTOCOL_H
 
-#define VIPER_CMD_PREAMBLE 0x42525056
+#define VIPER_CMD_PREAMBLE 0x43525056
 #define VIPER_PNO_PREAMBLE 0x50525056
 
 #define SENSORS_PER_SEU   16
@@ -69,6 +69,13 @@ typedef struct viper_pno_data_t
     float ori[4];
 }viper_pno_data_t;
 
+typedef struct viper_pno_data_a_t
+{
+    float pos[3];
+    int16_t ori[4];
+    int16_t acc;
+}viper_pno_data_a_t;
+
 typedef struct viper_sensor_frame_info_t
 {
     uint32_t    bfSnum       : 7;
@@ -87,13 +94,34 @@ typedef struct vipser_sensor_frame_data_t
     viper_pno_data_t pno;    // 28 bytes
 }viper_sensor_frame_data_t;
 
+typedef struct vipser_sensor_frame_data_a_t
+{
+    viper_sensor_frame_info_t SFinfo;  // 4 bytes
+    viper_pno_data_a_t pno_a;    // 28 bytes
+}viper_sensor_frame_data_a_t;
+
+typedef struct viper_hpo_info_t
+{
+    uint32_t bfPnoMode : 4;
+    uint32_t bfReserved0 : 4;
+    uint32_t bfReserved1 : 8;
+    uint32_t bfReserved2 : 16;
+} viper_hpo_info_t;
+
 typedef struct __attribute__((packed)) viper_pno_header_t
 {
     uint32_t seuid;
     uint32_t frame;
-    uint32_t hp_info;
+    viper_hpo_info_t hp_info;
     uint32_t sensor_count;
 } viper_pno_header_t;
+
+typedef struct viper_pno_t
+{
+    viper_frame_header_t hdr;
+    viper_pno_header_t seupno;
+    viper_sensor_frame_data_t sarr[SENSORS_PER_SEU];
+}viper_pno_t;
 
 typedef struct __attribute__((packed)) viper_frame_t {
   viper_full_header_t full_header;
@@ -249,6 +277,7 @@ public:
     ppay = 0;
     szpay = 0;
     preamble = pre; // VIPER_CMD_PREAMBLE;
+
     size = sizeof(viper_header_t) + CRC_BYTES;
   }
 
@@ -654,5 +683,149 @@ public:
       return 0;
   }
 };
+
+class CVPSeuPno : public viper_pno_t
+{
+public:
+  CVPSeuPno()
+  {
+    Init();
+  }
+
+  CVPSeuPno(const CVPSeuPno & rv)
+  {
+    memcpy(&hdr, &rv.hdr, sizeof(viper_pno_t));
+  }
+
+  CVPSeuPno(const viper_pno_t * prv)
+  {
+    Init();
+    memcpy(&hdr, prv, sizeof(viper_pno_t));
+  }
+
+  CVPSeuPno(uint8_t *p)
+  {
+    Init();
+    memcpy(&hdr, p, sizeof(viper_pno_t));
+  }
+
+  operator viper_pno_t * ()
+  { return (viper_pno_t *)this;}
+
+  CVPSeuPno & operator= (const CVPSeuPno & rv)
+  {
+    memcpy(&hdr, &rv.hdr, sizeof(viper_pno_t));
+    return *this;
+  }
+
+  CVPSeuPno & operator= (const viper_pno_t * prv)
+  {
+    memcpy(&hdr, prv, sizeof(viper_pno_t));
+    return *this;
+  }
+
+  CVPSeuPno & operator= (uint8_t *p)
+  {
+    memcpy(&hdr, p, sizeof(viper_pno_t));
+    return *this;
+  }
+
+  uint32_t Extractraw(uint8_t *p)
+  {
+    if (!p)
+    return 0;
+
+    viper_frame_header_t *ph = (viper_frame_header_t*)p;
+    if (ph->preamble != VIPER_PNO_PREAMBLE)
+    return 0;
+
+    Init();
+    uint32_t index = 0;
+    memcpy(&hdr, ph, sizeof(viper_frame_header_t)); index += sizeof(viper_frame_header_t);
+    memcpy(&seupno, &p[index], sizeof(viper_pno_header_t)); index += sizeof(viper_pno_header_t);
+    for (uint32_t i=0; i < seupno.sensor_count; i++)
+    {
+      memcpy(&sarr[i], &p[index], sizeof(viper_sensor_frame_data_t)); index += sizeof(viper_sensor_frame_data_t);
+    }
+
+    index += sizeof(CRC_BYTES);
+    return index;
+  }
+
+  uint32_t Extractseupno(uint8_t *p)
+  {
+    if (!p)
+    return 0;
+
+    //viper_frame_header_t *ph = (viper_frame_header_t*)p;
+    //if (ph->preamble != VIPER_PNO_PREAMBLE)
+    //  return 0;
+
+    fprintf(stderr, "\n\n");
+
+    for (int i = 0; i < 92; i++)
+    {
+      fprintf(stderr, "%u ", p[i]);
+    }
+
+    Init();
+    uint32_t index = 0;
+    //memcpy(&hdr, ph, sizeof(viper_frame_header_t)); index += sizeof(viper_frame_header_t);
+    memcpy(&seupno, &p[index], sizeof(viper_pno_header_t)); index += sizeof(viper_pno_header_t);
+    fprintf(stderr, "in the matrix.\n\n");
+    fprintf(stderr, "sensor count %d.\n\n", seupno.sensor_count);
+    for (uint32_t i = 0; i < seupno.sensor_count; i++)
+    {
+      memcpy(&sarr[i], &p[index], sizeof(viper_sensor_frame_data_t)); index += sizeof(viper_sensor_frame_data_t);
+    }
+
+    index += sizeof(CRC_BYTES);
+    return index;
+  }
+
+  uint32_t SensorCount() const
+  { return seupno.sensor_count;}
+
+  uint32_t SensorMap() const
+  {
+    uint32_t map = 0;
+
+    for (uint32_t i = 0; i < seupno.sensor_count; i++)
+    {
+      const viper_sensor_frame_data_t* pSD = &(sarr[i]);
+
+      map |= (1 << pSD->SFinfo.bfSnum);
+    }
+    return map;
+  }
+
+  viper_sensor_frame_data_t * SensFrame(int i)
+  {
+    if (i < (int)SensorCount())
+    return &(sarr[i]);
+    else
+    return 0;
+  }
+
+  viper_sensor_frame_data_a_t * SensFrameA(int i)
+  {
+    if (i < (int)SensorCount())
+    return (viper_sensor_frame_data_a_t*)(&(sarr[i]));
+    else
+    return 0;
+  }
+
+  uint32_t Mode()
+  {
+    return seupno.hp_info.bfPnoMode;
+  }
+
+  void Init()
+  {
+    memset(&hdr, 0, sizeof(viper_pno_t));
+  }
+
+};
+
 
 #endif

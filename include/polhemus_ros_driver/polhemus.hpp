@@ -65,21 +65,21 @@ public:
 	/* set up usb interface and configuration, send initial magic and reset */
 	int device_init(void);
 	virtual void device_binary_mode(void);
-	virtual void device_data_mode(data_mode_e mode);
+	virtual int device_data_mode(data_mode_e mode);
 	/* send a command */
 	int device_send(uint8_t *cmd, int &count);
 	/* read until the device doesn't send anything else */
 	void device_clear_input(void);
 	void device_ignore_input(int count);
-	virtual void receive_pno_data(void);
+	virtual int receive_pno_data(void);
 	virtual void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 
 	int device_read(uint8_t *pbuf, int &count, bool bTOisErr/*=false*/);
 	int device_write(uint8_t *buf, int size, int timeout);
 	void device_reset(void);
-	virtual void define_quat_data_type(void);
+	virtual int define_quat_data_type(void);
 	virtual void generate_data_structure(void);
-	virtual void set_hemisphere(int x, int y, int z);
+	virtual int set_hemisphere(int x, int y, int z);
 	virtual int request_num_of_stations(void);
 	int device_receive(void *buf, int size);
 	libusb_device_handle *device_handle;

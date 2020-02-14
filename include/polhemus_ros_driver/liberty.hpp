@@ -40,12 +40,12 @@ public:
 	int request_num_of_stations(void);
 	void device_reset(void);
 	void device_binary_mode(void);
-	void device_data_mode(data_mode_e mode);
-	void receive_pno_data(void);
+	int device_data_mode(data_mode_e mode);
+	int receive_pno_data(void);
 	void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 	void generate_data_structure(void);
-	void define_quat_data_type(void);
-	void set_hemisphere(int x, int y, int z);
+	int define_quat_data_type(void);
+	int set_hemisphere(int x, int y, int z);
 private:
 	liberty_pno_frame_t *stations;
 };

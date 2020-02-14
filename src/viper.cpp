@@ -59,13 +59,7 @@ void Viper::device_binary_mode(void)
   ;
 }
 
-void Viper::generate_data_structure(void)
-{
-  stations = (viper_pno_frame_t*) malloc(sizeof(viper_pno_frame_t) + (sizeof(viper_pno_data_t) * station_count));
-
-}
-
-void Viper::device_data_mode(data_mode_e mode)
+int Viper::device_data_mode(data_mode_e mode)
 {
 
   viper_cmds_e cmd_type;
@@ -92,32 +86,90 @@ void Viper::device_data_mode(data_mode_e mode)
   viper_command.Prepare(g_txbuf, g_ntxcount);
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
-  device_send(pbuf, nBytes);
+  int retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    g_nrxcount = RX_BUF_SIZE;
+    retval = device_read(g_rxbuf, g_nrxcount, true);
+
+    if (retval == 0)
+    {
+
+      CFrameInfo fi(g_rxbuf, g_nrxcount);
+      fprintf(stderr, "cmd data mode %d .\n\n", fi.cmd());
+      fprintf(stderr, "action data mode %d .\n\n", fi.action());
+
+      if ((fi.cmd() != CMD_CONTINUOUS_PNO) || !(fi.IsAck()))
+      {
+        retval = -1;
+      }
+    }
+  }
+  return retval;
+
 }
 
-void Viper::receive_pno_data(void)
+int Viper::receive_pno_data(void)
 {
-  if (!device_receive(stations, sizeof(viper_pno_header_t) + (sizeof(viper_pno_data_t) * station_count)) + CRC_BYTES) {
-    fprintf(stderr, "Receive failed.\n");
+  fprintf(stderr, "receive pno data.\n\n");
+  int retval = 0;
+  g_nrxcount = RX_BUF_SIZE;
+  retval = device_read(g_rxbuf, g_nrxcount, true);
+  fprintf(stderr, "pno byte count %d .\n\n", g_nrxcount);
+  for (std::size_t i = 0; i < g_nrxcount; i++)
+  {
+    fprintf(stderr, "%d ", g_rxbuf[i]);
   }
+
+  if (retval == 0)
+  {
+    CFrameInfo fi(g_rxbuf, g_nrxcount);
+
+    if (true)
+    {
+      uint32_t bytesextracted;
+      bytesextracted = pno.Extractseupno(fi.PPnoBody());
+
+      if (bytesextracted)
+      {
+        fprintf(stderr, "bytes extracted.\n\n");;
+      }
+      else
+      {
+        retval = -1;
+      }
+    }
+  }
+  fprintf(stderr, "pno final retval %d .\n\n", retval);
+  return retval;
 }
 
 void Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
 {
   // Set translation (in metres)
-  transform->transform.translation.x = stations->pno_data[station_id].pos[0];
-  transform->transform.translation.y = stations->pno_data[station_id].pos[1];
-  transform->transform.translation.z = stations->pno_data[station_id].pos[2];
+  fprintf(stderr, "in filling data routine.\n\n");
+  uint32_t val = pno.SensorCount();
+  fprintf(stderr, "in filling data routine %d.\n\n", val);
 
+  transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
+  transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
+  transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
+  fprintf(stderr, "still here.\n\n");
   // Set rotation
-  transform->transform.rotation.w = stations->pno_data[station_id].ori[0];
-  transform->transform.rotation.x = stations->pno_data[station_id].ori[1];
-  transform->transform.rotation.y = stations->pno_data[station_id].ori[2];
-  transform->transform.rotation.z = stations->pno_data[station_id].ori[3];
+  transform->transform.rotation.w = pno.SensFrame(station_id)->pno.ori[0];
+  transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
+  transform->transform.rotation.y = pno.SensFrame(station_id)->pno.ori[2];
+  transform->transform.rotation.z = pno.SensFrame(station_id)->pno.ori[3];
 }
 
-void Viper::define_quat_data_type(void)
+int Viper::define_quat_data_type(void)
 {
+  int retval = 0;
+  fprintf(stderr, "define quat type.\n\n");
   viper_cmds_e cmd_type = CMD_UNITS;
   viper_cmd_actions_e action = CMD_ACTION_SET;
 
@@ -129,7 +181,30 @@ void Viper::define_quat_data_type(void)
   viper_command.Prepare(g_txbuf, g_ntxcount);
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
-  device_send(pbuf, nBytes);
+  retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    g_nrxcount = RX_BUF_SIZE;
+    retval = device_read(g_rxbuf, g_nrxcount, true);
+
+    if (retval == 0)
+    {
+      fprintf(stderr, "look at frame info, quat request.\n\n");
+      CFrameInfo fi(g_rxbuf, g_nrxcount);
+      fprintf(stderr, "cmd quat%d .\n\n", fi.cmd());
+      fprintf(stderr, "action quat%d .\n\n", fi.action());
+      if ((fi.cmd() != CMD_UNITS) || !(fi.IsAck()))
+      {
+        retval = -1;
+      }
+    }
+  }
+  fprintf(stderr, "return code quat %d.\n\n", retval);
+  return retval;
 }
 
 int Viper::request_num_of_stations(void)
@@ -138,11 +213,14 @@ int Viper::request_num_of_stations(void)
   viper_cmds_e cmd_type = CMD_STATION_MAP;
   viper_cmd_actions_e action = CMD_ACTION_GET;
   CVPcmd viper_command;
+
   CStationMap cstamap;
   viper_command.Fill(cmd_type, action);
+
   viper_command.Prepare(g_txbuf, g_ntxcount);
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
+
   retval = device_send(pbuf, nBytes);
 
   if (retval)
@@ -153,17 +231,13 @@ int Viper::request_num_of_stations(void)
   {
     g_nrxcount = RX_BUF_SIZE;
     retval = device_read(g_rxbuf, g_nrxcount, true);
-    for (std::size_t i = 0; i < g_nrxcount; i++)
-    {
-      std::cout << int(g_rxbuf[i]) << ' ';
-    }
+
     if (retval == 0)
     {
       CFrameInfo fi(g_rxbuf, g_nrxcount);
       fprintf(stderr, "cmd %d .\n\n", fi.cmd());
-      if ((fi.cmd() == CMD_STATION_MAP) && (fi.IsAck()))
+      if (fi.cmd() == CMD_STATION_MAP)
       {
-        fprintf(stderr, "here innit.\n\n");
         CStationMap cmap((viper_station_map_t*) fi.PCmdPayload());
         cstamap = cmap;
 
@@ -177,8 +251,10 @@ int Viper::request_num_of_stations(void)
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
-void Viper::set_hemisphere(int x, int y, int z)
+int Viper::set_hemisphere(int x, int y, int z)
 {
+  int retval = 0;
+  fprintf(stderr, "set hemisphere.\n\n");
   viper_cmds_e cmd_type = CMD_HEMISPHERE;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_hemisphere_config_t cfg;
@@ -191,7 +267,30 @@ void Viper::set_hemisphere(int x, int y, int z)
   viper_command.Prepare(g_txbuf, g_ntxcount);
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
-  device_send(pbuf, nBytes);
+  retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    g_nrxcount = RX_BUF_SIZE;
+    retval = device_read(g_rxbuf, g_nrxcount, true);
+
+    if (retval == 0)
+    {
+      fprintf(stderr, "look at frame info.\n\n");
+      CFrameInfo fi(g_rxbuf, g_nrxcount);
+      fprintf(stderr, "cmd hem%d .\n\n", fi.cmd());
+      fprintf(stderr, "action hem%d .\n\n", fi.action());
+
+      if ((fi.cmd() != CMD_HEMISPHERE) || !(fi.IsAck()))
+      {
+        retval = -1;
+      }
+    }
+  }
+  return retval;
 }
 
 
