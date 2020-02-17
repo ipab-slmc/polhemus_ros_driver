@@ -38,24 +38,24 @@ void Polhemus::init_buffer(void)
 int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 {
   int nActual = 0;
-  int r = 0;
-  r = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
-  if (r)
+  int retval = 0;
+  retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
+  if (retval)
   {
     //r = (r << 16) | E_VPERR_LIBUSB
   }
   else if (nActual != size)
   {
     size = nActual;
-    r = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
+    retval = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
     fprintf(stderr, "write count wrong.\n\n");
   }
   else if ((nActual % MAX_PACKET_SIZE) == 0)
   {
     fprintf(stderr, "larger than max packet size.\n\n");
-    r = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
+    retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
-  return r;
+  return retval;
 }
 
 int Polhemus::device_init(void)
@@ -69,12 +69,6 @@ int Polhemus::device_init(void)
     return 0;
   }
 
-  /*
-   static char magic[] = { '*', '*', 0xff, 0x16, 0, 0, 0, 0 };
-   if (liberty_write(handle, magic, sizeof(magic), 0) != sizeof(magic)) {
-   warn("usb bulk write failed\n");
-   return 0;
-   }*/
   device_reset();
   return 1;
 }
@@ -89,13 +83,13 @@ int Polhemus::device_send(uint8_t *cmd, int &count)
   return 1;
 }
 
-int Polhemus::device_read(uint8_t *pbuf, int &size, bool bTOisErr)
+int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 {
   uint32_t timeout = VPUSB_READ_TIMEOUT_MS;
   int retval = 0;
   int nActual = 0;
 
-  retval = libusb_bulk_transfer(device_handle, endpoint_in, pbuf, size, &nActual, timeout);
+  retval = libusb_bulk_transfer(device_handle, endpoint_in, (unsigned char*)pbuf, size, &nActual, timeout);
   if ((retval == LIBUSB_ERROR_TIMEOUT) && !bTOisErr)
   {
     retval = 0;
@@ -166,12 +160,6 @@ int Polhemus::device_receive(void *buf, int size)
 }
 
 
-
-/** this resets previous `c' commands and puts the device in binary mode
- *
- *  beware: the device can be misconfigured in other ways too, though this will
- *  usually work
- */
 int Polhemus::device_reset(void)
 {
 }

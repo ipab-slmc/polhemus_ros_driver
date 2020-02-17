@@ -93,7 +93,11 @@ int Liberty::device_data_mode(data_mode_e mode)
 
 int Liberty::receive_pno_data(void)
 {
-  if (!device_receive(stations, sizeof(liberty_pno_frame_t) * station_count)) {
+  int retval = 0;
+  g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
+  retval = device_read(stations, g_nrxcount, true);
+  if (retval)
+  {
     fprintf(stderr, "Receive failed.\n");
   }
 }
@@ -126,8 +130,9 @@ int Liberty::request_num_of_stations(void)
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
   int size = sizeof(command);
+  int size_reply = sizeof(resp);
   device_send(command, size);
-  device_receive(&resp, sizeof(resp));
+  retval = device_read(&resp, size_reply, true);
   g_nrxcount = RX_BUF_SIZE;
 
   retval = device_read(g_rxbuf, g_nrxcount, true);

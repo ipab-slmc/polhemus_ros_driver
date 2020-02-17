@@ -55,7 +55,7 @@ public:
 	virtual int receive_pno_data(void);
 	virtual void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 
-	int device_read(uint8_t *pbuf, int &count, bool bTOisErr/*=false*/);
+	int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
 	int device_write(uint8_t *buf, int size, int timeout);
 	virtual int device_reset(void);
 	virtual int define_quat_data_type(void);

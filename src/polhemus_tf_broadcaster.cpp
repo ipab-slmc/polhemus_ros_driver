@@ -421,7 +421,7 @@ int main(int argc, char** argv) {
 
     for (i=0; i < nstations; i++)
     {
-      transformStamped.child_frame_id = "polhemus_sensor_" + std::to_string(i+1);
+      transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
       device->fill_pno_data(&transformStamped, i);
 
       // Broadcast frame
