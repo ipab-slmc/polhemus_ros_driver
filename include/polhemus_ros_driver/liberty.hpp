@@ -41,11 +41,12 @@ public:
 	int device_reset(void);
 	void device_binary_mode(void);
 	int device_data_mode(data_mode_e mode);
-	int receive_pno_data(void);
+	int receive_pno_data_frame(void);
 	void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 	void generate_data_structure(void);
 	int define_quat_data_type(void);
 	int set_hemisphere(int x, int y, int z);
+	bool calibrate(void);
 private:
 	liberty_pno_frame_t *stations;
 };

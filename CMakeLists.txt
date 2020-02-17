@@ -16,6 +16,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   roscpp
+  message_generation
+)
+
+add_service_files(
+  FILES
+  calibrate.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 catkin_package(

@@ -33,6 +33,7 @@
 #include <string.h>
 #include <signal.h>
 #include <cstdlib>
+#include <unistd.h>
 
 #include <sys/time.h>
 #include <time.h>
@@ -356,6 +357,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // Calibration service
+  ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
+  printf("Service ready to calibrate the sensors.\n");
+
   /* set output hemisphere -- this will produce a response which we're
      ignoring
   */
@@ -398,6 +403,16 @@ int main(int argc, char** argv) {
   geometry_msgs::TransformStamped transformStamped;
   ros::Rate rate(240);
 
+//  printf("Setting boresight...\n");
+//  retval = device->set_boresight(1, 0, 0, 0, 0);
+//
+//  if (retval)
+//  {
+//    fprintf(stderr, "Error setting boresight.\n\n");
+//    return 1;
+//  }
+
+
   // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
@@ -405,7 +420,7 @@ int main(int argc, char** argv) {
 
     // Update polhemus
     // (***)
-    device->receive_pno_data();
+    device->receive_pno_data_frame();
 
     /* Note: timestamp is the time in ms after the first read to the
        system after turning it on
@@ -428,6 +443,7 @@ int main(int argc, char** argv) {
       br.sendTransform(transformStamped);
     }
 
+    ros::spinOnce();
     rate.sleep();
   }
 

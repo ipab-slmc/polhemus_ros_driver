@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string>
 #include <geometry_msgs/TransformStamped.h>
+#include "polhemus_ros_driver/calibrate.h"
 
 
 #define INTERFACE 0
@@ -41,7 +42,6 @@ class Polhemus {
 public:
 	virtual ~Polhemus(void);
 	int count_bits(uint16_t v);
-	void init_buffer(void);
 
 	/* set up usb interface and configuration, send initial magic and reset */
 	int device_init(void);
@@ -51,8 +51,7 @@ public:
 	int device_send(uint8_t *cmd, int &count);
 	/* read until the device doesn't send anything else */
 	void device_clear_input(void);
-	void device_ignore_input(int count);
-	virtual int receive_pno_data(void);
+	virtual int receive_pno_data_frame(void);
 	virtual void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 
 	int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
@@ -62,7 +61,9 @@ public:
 	virtual void generate_data_structure(void);
 	virtual int set_hemisphere(int x, int y, int z);
 	virtual int request_num_of_stations(void);
-	int device_receive(void *buf, int size);
+	virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
+	bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
+	virtual bool calibrate(void);
 	libusb_device_handle *device_handle;
   int station_count;
   uint8_t endpoint_in;
@@ -71,8 +72,5 @@ public:
   int g_nrxcount;
   uint8_t g_txbuf[TX_BUF_SIZE];
   uint8_t g_rxbuf[RX_BUF_SIZE];
-private:
-  buffer_t buffer_in;
-
 };
 #endif

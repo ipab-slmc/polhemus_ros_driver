@@ -24,6 +24,7 @@
 
 
 #include <polhemus_ros_driver/liberty.hpp>
+#include <mutex>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -91,7 +92,7 @@ int Liberty::device_data_mode(data_mode_e mode)
   }
 }
 
-int Liberty::receive_pno_data(void)
+int Liberty::receive_pno_data_frame(void)
 {
   int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
@@ -154,6 +155,17 @@ int Liberty::set_hemisphere(int x, int y, int z)
   int size = sizeof(command);
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
   device_send(command, size);
-  return 0;
+  return true;
+}
+
+bool Liberty::calibrate(void)
+{
+  std::mutex mtx;
+  unsigned char command[] = "b*,0,0,0,0\r";
+  int size = sizeof(command);
+  mtx.lock();
+  device_send(command, size);
+  mtx.unlock();
+  return true;
 }
 

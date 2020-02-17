@@ -22,7 +22,7 @@ public:
   int request_num_of_stations(void);
   int device_reset(void);
   int device_data_mode(data_mode_e mode);
-  int receive_pno_data(void);
+  int receive_pno_data_frame(void);
   void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
   int define_quat_data_type(void);
   int set_hemisphere(int x, int y, int z);
@@ -32,8 +32,10 @@ private:
   viper_full_header_t* fill_command(uint32_t cmd, uint32_t act, uint32_t arg1 = 0, uint32_t arg2 = 0, void *payload = 0,
                                     uint32_t payload_size = 0);
   void prepare_frame(uint8_t buffer[], int &txbytes);
-  void *ppayload;
-  uint32_t payload_size;
+
+  int receive_data_frame(viper_cmds_e cmd_type);
+  int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
+  bool calibrate(void);
   CVPSeuPno pno;
 };
 #endif

@@ -4,6 +4,7 @@
 */
 
 #include <polhemus_ros_driver/viper.hpp>
+#include <ros/console.h>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -49,7 +50,7 @@ int Viper::device_data_mode(data_mode_e mode)
       action = CMD_ACTION_RESET;
       break;
     default:
-      ;
+      return -1;
   }
   viper_command.Fill(cmd_type, action);
   viper_command.Prepare(g_txbuf, g_ntxcount);
@@ -62,24 +63,31 @@ int Viper::device_data_mode(data_mode_e mode)
   }
   else
   {
-    g_nrxcount = RX_BUF_SIZE;
-    retval = device_read(g_rxbuf, g_nrxcount, true);
-
-    if (retval == 0)
-    {
-
-      CFrameInfo fi(g_rxbuf, g_nrxcount);
-      if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
-      {
-        retval = -1;
-      }
-    }
+    retval = receive_data_frame(cmd_type);
   }
   return retval;
 
 }
 
-int Viper::receive_pno_data(void)
+int Viper::receive_data_frame(viper_cmds_e cmd_type)
+{
+  int retval = 0;
+  g_nrxcount = RX_BUF_SIZE;
+  retval = device_read(g_rxbuf, g_nrxcount, true);
+
+  if (retval == 0)
+  {
+
+    CFrameInfo fi(g_rxbuf, g_nrxcount);
+    if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
+    {
+      retval = -1;
+    }
+  }
+  return retval;
+}
+
+int Viper::receive_pno_data_frame(void)
 {
   int retval = 0;
   g_nrxcount = RX_BUF_SIZE;
@@ -135,18 +143,7 @@ int Viper::define_quat_data_type(void)
   }
   else
   {
-    g_nrxcount = RX_BUF_SIZE;
-    retval = device_read(g_rxbuf, g_nrxcount, true);
-
-    if (retval == 0)
-    {
-      CFrameInfo fi(g_rxbuf, g_nrxcount);
-
-      if ((fi.cmd() != CMD_UNITS) || !(fi.IsAck()))
-      {
-        retval = -1;
-      }
-    }
+    retval = receive_data_frame(cmd_type);
   }
 
   return retval;
@@ -217,20 +214,45 @@ int Viper::set_hemisphere(int x, int y, int z)
   }
   else
   {
-    g_nrxcount = RX_BUF_SIZE;
-    retval = device_read(g_rxbuf, g_nrxcount, true);
-
-    if (retval == 0)
-    {
-      CFrameInfo fi(g_rxbuf, g_nrxcount);
-
-      if ((fi.cmd() != CMD_HEMISPHERE) || !(fi.IsAck()))
-      {
-        retval = -1;
-      }
-    }
+    retval = receive_data_frame(cmd_type);
   }
   return retval;
+}
+
+int Viper::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4)
+{
+  int retval = 0;
+  viper_cmds_e cmd_type = CMD_BORESIGHT;
+  viper_cmd_actions_e action = CMD_ACTION_SET;
+  viper_boresight_config_t cfg;
+  cfg.params[0] = arg_1;
+  cfg.params[1] = arg_2;
+  cfg.params[2] = arg_3;
+  cfg.params[3] = arg_4;
+  CVPcmd viper_command;
+
+  viper_command.Fill(cmd_type, action, -1, reset_origin, &cfg, sizeof(cfg));
+  viper_command.Prepare(g_txbuf, g_ntxcount);
+
+  int nBytes = g_ntxcount;
+  uint8_t *pbuf = g_txbuf;
+  retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    retval = receive_data_frame(cmd_type);
+  }
+  return retval;
+}
+
+bool Viper::calibrate(void)
+{
+  set_boresight(false, 1, 0, 0, 0);
+
+  return true;
 }
 
 

@@ -4,9 +4,10 @@
 */
 
 
-#include <polhemus_ros_driver/polhemus.hpp>
 #include <string.h>
 #include <libusb-1.0/libusb.h>
+#include "polhemus_ros_driver/polhemus.hpp"
+#include <ros/console.h>
 
 
 #ifdef DEBUG
@@ -28,11 +29,6 @@ int Polhemus::count_bits(uint16_t v) {
       v &= v - 1; // clear the least significant bit set
     }
   return c;
-}
-
-void Polhemus::init_buffer(void)
-{
-  buffer_in.fill = 0;
 }
 
 int Polhemus::device_write(uint8_t *buf, int size, int timeout)
@@ -104,7 +100,6 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 
 void Polhemus::device_clear_input(void)
 {
-  uint8_t buf[1024];
   g_nrxcount = RX_BUF_SIZE;
 
   while(g_nrxcount > 0)
@@ -113,52 +108,12 @@ void Polhemus::device_clear_input(void)
   }
 }
 
-void Polhemus::device_ignore_input(int count)
+bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res)
 {
-//    uint8_t buf[2048];
-//    int i;
-//    for (i = 0; i < count; ++i)
-//        device_read(buf, sizeof(buf), TIMEOUT);
+  printf("Calibration request...");
+  res.success = calibrate();
+  return true;
 }
-
-int Polhemus::device_receive(void *buf, int size)
-{
-//  //printf("liberty_receive: %u\n",size);
-//  uint8_t bufff[1024];
-//  int test;
-//  while (1)
-//  {
-//
-//    while (buffer_in.fill < size)
-//    {
-//      int n_read = device_read(bufff, test, true);
-//      warn("read %d\n", n_read);
-//      if (n_read < 0)
-//      {
-//        warn("error while reading from device (%d)", n_read);
-//        return 0;
-//      }
-//      buffer_in.fill += n_read;
-//    }
-//
-//#ifdef DEBUG
-//    fprintf(stderr, "- %c%c\n", b->buf[0], b->buf[1]);
-//#endif
-//
-//    if (buffer_in.buf[0] == 'L' && buffer_in.buf[1] == 'Y')
-//    {
-//      memcpy(buf, buffer_in.buf, size);
-//      memmove(buffer_in.buf, buffer_in.buf + size, buffer_in.fill - size);
-//      buffer_in.fill -= size;
-//      return 1;
-//    } else
-//    {
-//      warn("got corrupted data\n");
-//      buffer_in.fill = 0;
-//    }
-//  }
-}
-
 
 int Polhemus::device_reset(void)
 {
@@ -166,7 +121,6 @@ int Polhemus::device_reset(void)
 
 int Polhemus::request_num_of_stations(void)
 {
-	return 0;
 }
 
 int Polhemus::set_hemisphere(int x, int y, int z)
@@ -185,7 +139,7 @@ void Polhemus::generate_data_structure(void)
 {
 }
 
-int Polhemus::receive_pno_data(void)
+int Polhemus::receive_pno_data_frame(void)
 {
 }
 
@@ -194,5 +148,13 @@ void Polhemus::fill_pno_data(geometry_msgs::TransformStamped *transform, int sta
 }
 
 int Polhemus::device_data_mode(data_mode_e mode)
+{
+}
+
+int Polhemus::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4)
+{
+}
+
+bool Polhemus::calibrate(void)
 {
 }
