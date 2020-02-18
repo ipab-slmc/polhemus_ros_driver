@@ -1,9 +1,13 @@
 <launch>
+  <arg name="x_hs" default="0" />
+  <arg name="y_hs" default="0" />
+  <arg name="z_hs" default="-1" />
+
   <node pkg="polhemus_ros_driver" type="polhemus_tf_broadcaster" name="polhemus_tf_broadcaster" output="screen"/>
 
   <!--Set output hemisphere parameters-->
-  <param name="x_hs" value="0" type="double"/>
-  <param name="y_hs" value="0" type="double"/>
-  <param name="z_hs" value="-1" type="double"/>
+  <param name="x_hs" value="$(arg x_hs)" type="double"/>
+  <param name="y_hs" value="$(arg y_hs)" type="double"/>
+  <param name="z_hs" value="$(arg z_hs)" type="double"/>
   <param name="product_type" value="viper" type="string"/>
 </launch>

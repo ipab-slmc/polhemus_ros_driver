@@ -55,6 +55,7 @@ target_link_libraries(polhemus_tf_broadcaster
   usb-1.0
   polhemus
 )
+add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_gencpp)
 
 install(DIRECTORY include/polhemus_ros_driver
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})

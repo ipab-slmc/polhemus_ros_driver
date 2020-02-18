@@ -33,8 +33,6 @@
 #include <string.h>
 #include <signal.h>
 #include <cstdlib>
-#include <unistd.h>
-
 #include <sys/time.h>
 #include <time.h>
 #include <ros/ros.h>
@@ -45,6 +43,7 @@
 #include <polhemus_ros_driver/viper.hpp>
 #include <polhemus_ros_driver/viper_protocol.h>
 #include "polhemus_ros_driver/liberty_protocol.h"
+
 
 /* Vendor 0x0f44 -> Polhemus */
 #define VENDOR 0xf44
@@ -58,7 +57,7 @@
 
 
 typedef struct _vp_usbdevinfo {
-  int     usbDevIndex;
+  int usbDevIndex;
   uint8_t usbBusNum;
   uint8_t usbDevNum;
   uint16_t usbVID;
@@ -182,7 +181,6 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
         p->usbPID = pid;
       }
     }
-
     i++;
   }
 
@@ -272,11 +270,10 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
   return r;
 }
 
-libusb_device_handle *g_usbhnd = 0;
-vp_usbdevinfo g_usbinfo;
 
 int main(int argc, char** argv) {
-
+  libusb_device_handle *g_usbhnd = 0;
+  vp_usbdevinfo g_usbinfo;
   int i, nstations;
   double x_hs, y_hs, z_hs;
   struct timeval tv;
@@ -405,16 +402,6 @@ int main(int argc, char** argv) {
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
   ros::Rate rate(240);
-
-//  printf("Setting boresight...\n");
-//  retval = device->set_boresight(1, 0, 0, 0, 0);
-//
-//  if (retval)
-//  {
-//    fprintf(stderr, "Error setting boresight.\n\n");
-//    return 1;
-//  }
-
 
   // Start main loop
   while(ros::ok()) {
