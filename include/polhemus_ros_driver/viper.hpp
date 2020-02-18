@@ -32,9 +32,8 @@ private:
   viper_full_header_t* fill_command(uint32_t cmd, uint32_t act, uint32_t arg1 = 0, uint32_t arg2 = 0, void *payload = 0,
                                     uint32_t payload_size = 0);
   void prepare_frame(uint8_t buffer[], int &txbytes);
-
   int receive_data_frame(viper_cmds_e cmd_type);
-  int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
+  int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4 = 0);
   bool calibrate(void);
   bool persist_commands(void);
   CVPSeuPno pno;

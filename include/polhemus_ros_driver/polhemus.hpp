@@ -39,35 +39,36 @@ typedef enum data_mode_e {
     DATA_RESET
 } data_mode_e;
 
-class Polhemus {
+class Polhemus
+{
 public:
-	virtual ~Polhemus(void);
-	int count_bits(uint16_t v);
+  virtual ~Polhemus(void);
+  int count_bits(uint16_t v);
 
-	/* set up usb interface and configuration, send initial magic and reset */
-	int device_init(void);
-	virtual void device_binary_mode(void);
-	virtual int device_data_mode(data_mode_e mode);
-	/* send a command */
-	int device_send(uint8_t *cmd, int &count);
-	/* read until the device doesn't send anything else */
-	void device_clear_input(void);
-	virtual int receive_pno_data_frame(void);
-	virtual void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+  /* set up usb interface and configuration, send initial magic and reset */
+  int device_init(void);
+  virtual void device_binary_mode(void);
+  virtual int device_data_mode(data_mode_e mode);
+  /* send a command */
+  int device_send(uint8_t *cmd, int &count);
+  /* read until the device doesn't send anything else */
+  void device_clear_input(void);
+  virtual int receive_pno_data_frame(void);
+  virtual void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 
-	int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
-	int device_write(uint8_t *buf, int size, int timeout);
-	virtual int device_reset(void);
-	virtual int define_quat_data_type(void);
-	virtual void generate_data_structure(void);
-	virtual int set_hemisphere(int x, int y, int z);
-	virtual int request_num_of_stations(void);
-	virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
-	bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
-	bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
-	virtual bool calibrate(void);
-	virtual bool persist_commands(void);
-	libusb_device_handle *device_handle;
+  int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
+  int device_write(uint8_t *buf, int size, int timeout);
+  virtual int device_reset(void);
+  virtual int define_quat_data_type(void);
+  virtual void generate_data_structure(void);
+  virtual int set_hemisphere(int x, int y, int z);
+  virtual int request_num_of_stations(void);
+  virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4 = 0);
+  bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
+  bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
+  virtual bool calibrate(void);
+  virtual bool persist_commands(void);
+  libusb_device_handle *device_handle;
   int station_count;
   uint8_t endpoint_in;
   uint8_t endpoint_out;

@@ -29,7 +29,6 @@ int Viper::device_reset(void)
   return retval;
 }
 
-
 int Viper::device_data_mode(data_mode_e mode)
 {
   viper_cmds_e cmd_type;
@@ -66,7 +65,6 @@ int Viper::device_data_mode(data_mode_e mode)
     retval = receive_data_frame(cmd_type);
   }
   return retval;
-
 }
 
 int Viper::receive_data_frame(viper_cmds_e cmd_type)
@@ -77,7 +75,6 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
 
   if (retval == 0)
   {
-
     CFrameInfo fi(g_rxbuf, g_nrxcount);
     if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
     {
