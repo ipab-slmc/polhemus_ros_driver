@@ -36,6 +36,7 @@ private:
   int receive_data_frame(viper_cmds_e cmd_type);
   int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
   bool calibrate(void);
+  bool persist_commands(void);
   CVPSeuPno pno;
 };
 #endif

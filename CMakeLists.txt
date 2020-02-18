@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   calibrate.srv
+  persist.srv
 )
 
 generate_messages(

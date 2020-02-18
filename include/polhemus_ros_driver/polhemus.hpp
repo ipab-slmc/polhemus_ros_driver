@@ -11,6 +11,7 @@
 #include <string>
 #include <geometry_msgs/TransformStamped.h>
 #include "polhemus_ros_driver/calibrate.h"
+#include "polhemus_ros_driver/persist.h"
 
 
 #define INTERFACE 0
@@ -63,7 +64,9 @@ public:
 	virtual int request_num_of_stations(void);
 	virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4=0);
 	bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
+	bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
 	virtual bool calibrate(void);
+	virtual bool persist_commands(void);
 	libusb_device_handle *device_handle;
   int station_count;
   uint8_t endpoint_in;

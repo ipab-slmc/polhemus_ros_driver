@@ -81,6 +81,8 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
     CFrameInfo fi(g_rxbuf, g_nrxcount);
     if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
     {
+      fprintf(stderr, "cmd: %d", fi.cmd());
+      fprintf(stderr, "action: %d", fi.action());
       retval = -1;
     }
   }
@@ -255,4 +257,36 @@ bool Viper::calibrate(void)
   return true;
 }
 
+bool Viper::persist_commands(void)
+{
+  int retval = 0;
+  viper_cmds_e cmd_type = CMD_PERSIST;
+  viper_cmd_actions_e action = CMD_ACTION_SET;
+
+  CVPcmd viper_command;
+
+  viper_command.Fill(cmd_type, action);
+  viper_command.Prepare(g_txbuf, g_ntxcount);
+
+  int nBytes = g_ntxcount;
+  uint8_t *pbuf = g_txbuf;
+  retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    retval = receive_data_frame(cmd_type);
+  }
+
+  if (! retval)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
 

@@ -115,6 +115,13 @@ bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhe
   return true;
 }
 
+bool Polhemus::persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res)
+{
+  printf("Making config persistent");
+  res.success = persist_commands();
+  return true;
+}
+
 int Polhemus::device_reset(void)
 {
 }
@@ -156,5 +163,9 @@ int Polhemus::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, 
 }
 
 bool Polhemus::calibrate(void)
+{
+}
+
+bool Polhemus::persist_commands(void)
 {
 }

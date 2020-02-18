@@ -24,7 +24,6 @@
 
 
 #include <polhemus_ros_driver/liberty.hpp>
-#include <mutex>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -160,12 +159,9 @@ int Liberty::set_hemisphere(int x, int y, int z)
 
 bool Liberty::calibrate(void)
 {
-  std::mutex mtx;
   unsigned char command[] = "b*,0,0,0,0\r";
   int size = sizeof(command);
-  mtx.lock();
   device_send(command, size);
-  mtx.unlock();
   return true;
 }
 

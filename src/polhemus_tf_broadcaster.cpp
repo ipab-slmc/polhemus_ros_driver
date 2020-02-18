@@ -361,6 +361,9 @@ int main(int argc, char** argv) {
   ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
   printf("Service ready to calibrate the sensors.\n");
 
+  ros::ServiceServer service2 = nh.advertiseService("persistent_cfg", &Polhemus::persist_srv, device);
+  printf("Service ready to persist cfg.\n");
+
   /* set output hemisphere -- this will produce a response which we're
      ignoring
   */
