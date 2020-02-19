@@ -12,6 +12,7 @@ if(NOT ${libusb_1_FOUND})
 endif()
 
 find_package(catkin REQUIRED COMPONENTS
+  genmsg
   geometry_msgs
   tf2
   tf2_ros
@@ -42,20 +43,23 @@ include_directories(
   ${LIBUSB_1_INCLUDE_DIRS}
 )
 
+add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp)
+add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_generate_messages_cpp)
+
 add_library(polhemus
   src/liberty.cpp
   src/viper.cpp
   src/polhemus.cpp
 )
 
-add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp)
+add_dependencies(polhemus polhemus_ros_driver_generate_messages_cpp)
+
 target_link_libraries(polhemus_tf_broadcaster
   ${catkin_LIBRARIES}
   ${LIBUSB_1_LIBRARIES}
   usb-1.0
   polhemus
 )
-add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_gencpp)
 
 install(DIRECTORY include/polhemus_ros_driver
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION})
