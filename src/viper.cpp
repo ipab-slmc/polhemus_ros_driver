@@ -247,6 +247,32 @@ int Viper::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int
   return retval;
 }
 
+int Viper::set_source(int source)
+{
+  int retval = 0;
+  viper_cmds_e cmd_type = CMD_SRC_SELECT;
+  viper_cmd_actions_e action = CMD_ACTION_SET;
+  viper_src_select_cfg_t cfg;
+  cfg.src_select_map = 0;
+  CVPcmd viper_command;
+
+  viper_command.Fill(cmd_type, action, -1, 0, &cfg, sizeof(cfg));
+  viper_command.Prepare(g_txbuf, g_ntxcount);
+
+  int nBytes = g_ntxcount;
+  uint8_t *pbuf = g_txbuf;
+  retval = device_send(pbuf, nBytes);
+  if (retval)
+  {
+    ;
+  }
+  else
+  {
+    retval = receive_data_frame(cmd_type);
+  }
+  return retval;
+}
+
 bool Viper::calibrate(void)
 {
   set_boresight(false, 1, 0, 0, 0);

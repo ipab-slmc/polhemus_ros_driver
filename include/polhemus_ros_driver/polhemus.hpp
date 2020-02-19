@@ -64,6 +64,7 @@ public:
   virtual int set_hemisphere(int x, int y, int z);
   virtual int request_num_of_stations(void);
   virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4 = 0);
+  virtual int set_source(int source);
   bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
   bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
   virtual bool calibrate(void);

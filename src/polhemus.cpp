@@ -169,3 +169,7 @@ bool Polhemus::calibrate(void)
 bool Polhemus::persist_commands(void)
 {
 }
+
+int Polhemus::set_source(int source)
+{
+}

@@ -354,6 +354,14 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  retval = device->set_source(0);
+  printf("Setting source to 0\n");
+  if (retval)
+  {
+    fprintf(stderr, "Error source to 0.\n\n");
+    return 1;
+  }
+
   // Calibration service
   ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
   printf("Service ready to calibrate the sensors.\n");

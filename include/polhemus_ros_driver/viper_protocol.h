@@ -195,6 +195,11 @@ typedef struct __attribute__((packed)) viper_hemisphere_config_t
     float params[3];
 }viper_hemisphere_config_t;
 
+typedef struct __attribute__((packed)) viper_src_select_cfg_t
+{
+    uint32_t src_select_map;
+}viper_src_select_cfg_t;
+
 typedef struct __attribute__((packed)) viper_boresight_config_t
 {
     float params[4];
