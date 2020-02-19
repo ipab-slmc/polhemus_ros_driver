@@ -34,10 +34,10 @@ Open a new terminal. Start RVIZ (`$ rosrun rviz rviz`).
 
 # Launch file
 
-The launch file `start.launch` allows you to change the zenith of the hemisphere.
+The launch file `start.launch` allows you to change the zenith of the hemisphere and select the device type, the options are 'liberty' or 'viper'.
 
 # Requirements
 
-* ROS Kinetic, see `package.xml`
-* `libusb-dev`
-* `fxload`
+* ROS Melodic, see `package.xml`
+* `libusb-1`
+* `fxload` for Liberty only
