@@ -256,7 +256,7 @@ int Viper::set_source(int source)
   cfg.src_select_map = 0;
   CVPcmd viper_command;
 
-  viper_command.Fill(cmd_type, action, -1, 0, &cfg, sizeof(cfg));
+  viper_command.Fill(cmd_type, action, 0, 0, &cfg, sizeof(cfg));
   viper_command.Prepare(g_txbuf, g_ntxcount);
 
   int nBytes = g_ntxcount;
