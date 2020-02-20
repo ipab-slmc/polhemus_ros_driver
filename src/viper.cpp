@@ -128,15 +128,6 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station
   {
     retval = -1;
   }
-  transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
-  transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
-  transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
-  // Set rotation
-  transform->transform.rotation.w = pno.SensFrame(station_id)->pno.ori[0];
-  transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
-  transform->transform.rotation.y = pno.SensFrame(station_id)->pno.ori[2];
-  transform->transform.rotation.z = pno.SensFrame(station_id)->pno.ori[3];
-
   return retval;
 }
 
