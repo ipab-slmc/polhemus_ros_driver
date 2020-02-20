@@ -359,7 +359,7 @@ int main(int argc, char** argv) {
   if (retval)
   {
     fprintf(stderr, "Error source to 0.\n\n");
-    return 1;
+    // return 1;
   }
 
   // Calibration service
