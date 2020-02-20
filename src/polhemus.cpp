@@ -150,7 +150,7 @@ int Polhemus::receive_pno_data_frame(void)
 {
 }
 
-void Polhemus::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
+int Polhemus::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
 {
 }
 

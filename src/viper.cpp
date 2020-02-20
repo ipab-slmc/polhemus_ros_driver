@@ -103,14 +103,31 @@ int Viper::receive_pno_data_frame(void)
     {
       retval = -1;
     }
+    // bitmap of active sensors
+    sensor_map = pno.SensorMap();
   }
   return retval;
 }
 
-void Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
+int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
 {
   // Set translation (in metres)
-
+  int retval = 0;
+  if ((1 << station_id) & sensor_map)
+  {
+    transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
+    transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
+    transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
+    // Set rotation
+    transform->transform.rotation.w = pno.SensFrame(station_id)->pno.ori[0];
+    transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
+    transform->transform.rotation.y = pno.SensFrame(station_id)->pno.ori[2];
+    transform->transform.rotation.z = pno.SensFrame(station_id)->pno.ori[3];
+  }
+  else
+  {
+    retval = -1;
+  }
   transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
   transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
   transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
@@ -119,6 +136,8 @@ void Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int statio
   transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
   transform->transform.rotation.y = pno.SensFrame(station_id)->pno.ori[2];
   transform->transform.rotation.z = pno.SensFrame(station_id)->pno.ori[3];
+
+  return retval;
 }
 
 int Viper::define_quat_data_type(void)

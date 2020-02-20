@@ -102,7 +102,7 @@ int Liberty::receive_pno_data_frame(void)
   }
 }
 
-void Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
+int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
 {
   // Set translation (conversion: inches -> meters)
   transform->transform.translation.x = 0.0254*stations[station_id].x;

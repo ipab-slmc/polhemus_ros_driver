@@ -438,7 +438,10 @@ int main(int argc, char** argv) {
       device->fill_pno_data(&transformStamped, i);
 
       // Broadcast frame
-      br.sendTransform(transformStamped);
+      if (!retval)
+      {
+        br.sendTransform(transformStamped);
+      }
     }
 
     ros::spinOnce();

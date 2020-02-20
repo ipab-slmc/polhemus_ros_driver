@@ -42,7 +42,7 @@ public:
 	void device_binary_mode(void);
 	int device_data_mode(data_mode_e mode);
 	int receive_pno_data_frame(void);
-	void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+	int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 	void generate_data_structure(void);
 	int define_quat_data_type(void);
 	int set_hemisphere(int x, int y, int z);

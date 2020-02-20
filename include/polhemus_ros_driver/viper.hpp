@@ -23,7 +23,7 @@ public:
   int device_reset(void);
   int device_data_mode(data_mode_e mode);
   int receive_pno_data_frame(void);
-  void fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+  int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
   int define_quat_data_type(void);
   int set_hemisphere(int x, int y, int z);
 private:
@@ -38,5 +38,6 @@ private:
   bool calibrate(void);
   bool persist_commands(void);
   CVPSeuPno pno;
+  uint32_t sensor_map;
 };
 #endif
