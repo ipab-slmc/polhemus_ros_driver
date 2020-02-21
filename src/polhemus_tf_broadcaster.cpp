@@ -418,29 +418,31 @@ int main(int argc, char** argv) {
 
     // Update polhemus
     // (***)
-    device->receive_pno_data_frame();
-
-    /* Note: timestamp is the time in ms after the first read to the
-       system after turning it on
-       at 240Hz, the time between data sample is 1/240 = .00416_
-       seconds.
-       The framecount is a more exact way of finding out the time:
-       timestamp = framecount*1000/240 (rounded down to an int)*
-    */
-
-    // Header info - acquired at same time = same timestamp
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "polhemus_base";
-
-    for (i=0; i < nstations; i++)
+    int sensor_count = device->receive_pno_data_frame();
+    if (sensor_count > 0)
     {
-      transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
-      device->fill_pno_data(&transformStamped, i);
+      /* Note: timestamp is the time in ms after the first read to the
+         system after turning it on
+         at 240Hz, the time between data sample is 1/240 = .00416_
+         seconds.
+         The framecount is a more exact way of finding out the time:
+         timestamp = framecount*1000/240 (rounded down to an int)*
+      */
 
-      // Broadcast frame
-      if (!retval)
+      // Header info - acquired at same time = same timestamp
+      transformStamped.header.stamp = ros::Time::now();
+      transformStamped.header.frame_id = "polhemus_base";
+
+      for (i=0; i < sensor_count; i++)
       {
-        br.sendTransform(transformStamped);
+        transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
+        device->fill_pno_data(&transformStamped, i);
+
+        // Broadcast frame
+        if (!retval)
+        {
+          br.sendTransform(transformStamped);
+        }
       }
     }
 

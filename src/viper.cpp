@@ -105,29 +105,26 @@ int Viper::receive_pno_data_frame(void)
     }
     // bitmap of active sensors
     sensor_map = pno.SensorMap();
+    retval = pno.SensorCount();
   }
   return retval;
 }
 
-int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
+int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
   // Set translation (in metres)
   int retval = 0;
-  if ((1 << station_id) & sensor_map)
-  {
-    transform->transform.translation.x = pno.SensFrame(station_id)->pno.pos[0];
-    transform->transform.translation.y = pno.SensFrame(station_id)->pno.pos[1];
-    transform->transform.translation.z = pno.SensFrame(station_id)->pno.pos[1];
+
+    transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum);
+    transform->transform.translation.x = pno.SensFrame(count)->pno.pos[0];
+    transform->transform.translation.y = pno.SensFrame(count)->pno.pos[1];
+    transform->transform.translation.z = pno.SensFrame(count)->pno.pos[1];
     // Set rotation
-    transform->transform.rotation.w = pno.SensFrame(station_id)->pno.ori[0];
-    transform->transform.rotation.x = pno.SensFrame(station_id)->pno.ori[1];
-    transform->transform.rotation.y = pno.SensFrame(station_id)->pno.ori[2];
-    transform->transform.rotation.z = pno.SensFrame(station_id)->pno.ori[3];
-  }
-  else
-  {
-    retval = -1;
-  }
+    transform->transform.rotation.w = pno.SensFrame(count)->pno.ori[0];
+    transform->transform.rotation.x = pno.SensFrame(count)->pno.ori[1];
+    transform->transform.rotation.y = pno.SensFrame(count)->pno.ori[2];
+    transform->transform.rotation.z = pno.SensFrame(count)->pno.ori[3];
+
   return retval;
 }
 

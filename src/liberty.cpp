@@ -102,18 +102,19 @@ int Liberty::receive_pno_data_frame(void)
   }
 }
 
-int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id)
+int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
   // Set translation (conversion: inches -> meters)
-  transform->transform.translation.x = 0.0254*stations[station_id].x;
-  transform->transform.translation.y = 0.0254*stations[station_id].y;
-  transform->transform.translation.z = 0.0254*stations[station_id].z;
+  transform->child_frame_id = "polhemus_station_" + std::to_string(count);
+  transform->transform.translation.x = 0.0254*stations[count].x;
+  transform->transform.translation.y = 0.0254*stations[count].y;
+  transform->transform.translation.z = 0.0254*stations[count].z;
 
   // Set rotation
-  transform->transform.rotation.w = stations[station_id].quaternion[0];
-  transform->transform.rotation.x = stations[station_id].quaternion[1];
-  transform->transform.rotation.y = stations[station_id].quaternion[2];
-  transform->transform.rotation.z = stations[station_id].quaternion[3];
+  transform->transform.rotation.w = stations[count].quaternion[0];
+  transform->transform.rotation.x = stations[count].quaternion[1];
+  transform->transform.rotation.y = stations[count].quaternion[2];
+  transform->transform.rotation.z = stations[count].quaternion[3];
 }
 
 int Liberty::define_quat_data_type(void)
