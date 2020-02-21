@@ -78,8 +78,9 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
     CFrameInfo fi(g_rxbuf, g_nrxcount);
     if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
     {
-      fprintf(stderr, "cmd: %d", fi.cmd());
-      fprintf(stderr, "action: %d", fi.action());
+      fprintf(stderr, "cmd: %d\n", fi.cmd());
+      fprintf(stderr, "action: %d\n", fi.action());
+      fprintf(stderr, "cmd sent: %d\n", cmd_type);
       retval = -1;
     }
   }
@@ -102,6 +103,7 @@ int Viper::receive_pno_data_frame(void)
     if (!bytesextracted)
     {
       retval = -1;
+      return retval;
     }
     // bitmap of active sensors
     sensor_map = pno.SensorMap();
@@ -115,15 +117,15 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
   // Set translation (in metres)
   int retval = 0;
 
-    transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum);
-    transform->transform.translation.x = pno.SensFrame(count)->pno.pos[0];
-    transform->transform.translation.y = pno.SensFrame(count)->pno.pos[1];
-    transform->transform.translation.z = pno.SensFrame(count)->pno.pos[1];
-    // Set rotation
-    transform->transform.rotation.w = pno.SensFrame(count)->pno.ori[0];
-    transform->transform.rotation.x = pno.SensFrame(count)->pno.ori[1];
-    transform->transform.rotation.y = pno.SensFrame(count)->pno.ori[2];
-    transform->transform.rotation.z = pno.SensFrame(count)->pno.ori[3];
+  transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum);
+  transform->transform.translation.x = pno.SensFrame(count)->pno.pos[0];
+  transform->transform.translation.y = pno.SensFrame(count)->pno.pos[1];
+  transform->transform.translation.z = pno.SensFrame(count)->pno.pos[2];
+  // Set rotation
+  transform->transform.rotation.w = pno.SensFrame(count)->pno.ori[0];
+  transform->transform.rotation.x = pno.SensFrame(count)->pno.ori[1];
+  transform->transform.rotation.y = pno.SensFrame(count)->pno.ori[2];
+  transform->transform.rotation.z = pno.SensFrame(count)->pno.ori[3];
 
   return retval;
 }
@@ -204,7 +206,7 @@ int Viper::set_hemisphere(int x, int y, int z)
   viper_cmds_e cmd_type = CMD_HEMISPHERE;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_hemisphere_config_t cfg;
-  cfg.track_enabled = 1;
+  cfg.track_enabled = 0;
   cfg.params[0] = x;
   cfg.params[1] = y;
   cfg.params[2] = z;
