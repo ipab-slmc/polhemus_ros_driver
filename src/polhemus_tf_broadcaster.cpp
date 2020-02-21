@@ -409,7 +409,7 @@ int main(int argc, char** argv) {
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
-  ros::Rate rate(240);
+  ros::Rate rate(960);
 
   // Start main loop
   while(ros::ok()) {
