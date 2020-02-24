@@ -435,13 +435,11 @@ int main(int argc, char** argv) {
 
       for (i=0; i < sensor_count; i++)
       {
-        //transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
         device->fill_pno_data(&transformStamped, i);
 
         // Broadcast frame
         if (!retval)
         {
-          //transformStamped.transform.translation.y = -transformStamped.transform.translation.y;
           br.sendTransform(transformStamped);
         }
       }
@@ -451,7 +449,6 @@ int main(int argc, char** argv) {
     rate.sleep();
   }
 
-  printf("OUT OF THE LOOP! ros NOT OK!");
   // Shutdown
   device->device_data_mode(DATA_RESET); // stop continuous mode
   libusb_close(g_usbhnd);
