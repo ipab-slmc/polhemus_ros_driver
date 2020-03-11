@@ -48,7 +48,7 @@ int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
   unsigned char command[] = "\rp\r";
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   device_send(command, size);
   // remove everything from input
   device_clear_input();
@@ -57,7 +57,7 @@ int Liberty::device_reset(void)
 void Liberty::device_binary_mode(void)
 {
   unsigned char command[] = "f1\r";
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   device_send(command, size);
 }
 
@@ -120,7 +120,7 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 int Liberty::define_quat_data_type(void)
 {
   unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   device_send(command, size);
   return 0;
 }
@@ -130,13 +130,15 @@ int Liberty::request_num_of_stations(void)
   int retval = 0;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   int size_reply = sizeof(resp);
   device_send(command, size);
   retval = device_read(&resp, size_reply, true);
+  fprintf(stderr, "Request num of station: init_cmd: %d, station: %d, error: %d, size: %d, active: %d, detected: %d\n", resp.head.init_cmd, resp.head.station, resp.head.error, resp.head.size, resp.active, resp.detected);
+
   g_nrxcount = RX_BUF_SIZE;
 
-  retval = device_read(g_rxbuf, g_nrxcount, true);
+  //retval = device_read(g_rxbuf, g_nrxcount, true);
 
   if (resp.head.init_cmd == 21) {
     station_count = count_bits(resp.detected & resp.active);

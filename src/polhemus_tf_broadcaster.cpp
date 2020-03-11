@@ -286,24 +286,30 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "polhemus_tf_broadcaster");
   ros::NodeHandle nh("/polhemus_tf_broadcaster");
 
-  retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, VIPER_PRODUCT);
-
-  if (retval)
-  {
-    //error connecting
-    fprintf(stderr, "Error connecting to device.\n\n");
-    return 1;
-  }
 
   nh.getParam("/product_type", product_type);
   if (product_type == "liberty")
   {
+    retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, LIBERTY_PRODUCT);
+    if (retval)
+    {
+      //error connecting
+      fprintf(stderr, "Error connecting to device.\n\n");
+      return 1;
+    }
 	  product_id = LIBERTY_PRODUCT;
 	  device = new Liberty();
 	  fprintf(stderr, "Initialising liberty device.\n\n");
   }
   else if (product_type == "viper")
   {
+    retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, VIPER_PRODUCT);
+    if (retval)
+    {
+      //error connecting
+      fprintf(stderr, "Error connecting to device.\n\n");
+      return 1;
+    }
 	  product_id = VIPER_PRODUCT;
 	  device = new Viper();
     fprintf(stderr, "Initialising Viper device.\n\n");
