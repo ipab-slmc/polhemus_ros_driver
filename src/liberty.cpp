@@ -47,7 +47,7 @@ Liberty::~Liberty(void) {}
 int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
-  unsigned char command[] = "\rp\r";
+  unsigned char command[] = "p\r";
   int size = sizeof(command)-1;
   device_send(command, size);
   // remove everything from input
@@ -75,14 +75,14 @@ int Liberty::device_data_mode(data_mode_e mode)
     case DATA_CONTINUOUS:
     {
       unsigned char command[] = "c\r";
-      size = sizeof(command);
+      size = sizeof(command)-1;
       device_send(command, size);
       return 0;
     }
     case DATA_SINGLE:
     {
-      unsigned char command[] = "p";
-      size = sizeof(command);
+      unsigned char command[] = "p\r";
+      size = sizeof(command)-1;
       device_send(command, size);
       return 0;
     }
@@ -96,10 +96,12 @@ int Liberty::receive_pno_data_frame(void)
   int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
   retval = device_read(stations, g_nrxcount, true);
+ 
   if (retval)
   {
     fprintf(stderr, "Receive failed.\n");
   }
+  return station_count;
 }
 
 int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
@@ -142,7 +144,7 @@ int Liberty::request_num_of_stations(void)
 
   if (resp.head.init_cmd == 21) {
     station_count = count_bits(resp.detected & resp.active);
-    return station_count;
+    return retval;
   }
   else {
     fprintf(stderr, "init command returned: %d %d %d \n", resp.head.init_cmd, resp.head.station, resp.head.error);
@@ -154,7 +156,7 @@ int Liberty::request_num_of_stations(void)
 int Liberty::set_hemisphere(int x, int y, int z)
 {
   unsigned char command[32];
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
   device_send(command, size);
   return true;
@@ -163,7 +165,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
 bool Liberty::calibrate(void)
 {
   unsigned char command[] = "b*,0,0,0,0\r";
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   device_send(command, size);
   return true;
 }

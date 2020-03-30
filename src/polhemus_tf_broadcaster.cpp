@@ -122,14 +122,16 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
     {
       const struct libusb_endpoint_descriptor *p_ep;
       p_ep = &conf_desc->interface[iface].altsetting[j].endpoint[k];
-
       if ((p_ep->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK)
           & (LIBUSB_TRANSFER_TYPE_BULK | LIBUSB_TRANSFER_TYPE_INTERRUPT))
       {
         if (p_ep->bEndpointAddress & LIBUSB_ENDPOINT_IN)
         {
           if (!ep_in)
+          {
+            //printf("Ep in is false, endpoinst address is: %d", p_ep->bEndpointAddress);
             ep_in = p_ep->bEndpointAddress;
+          }
         } else
         {
           if (!ep_out)
@@ -384,16 +386,15 @@ int main(int argc, char** argv) {
 
   printf("Setting the output hemisphere\n");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
-  if (retval)
-  {
-    fprintf(stderr, "Error setting hemisphere.\n\n");
-    return 1;
-  }
+  // if (retval)
+  // {
+  //   fprintf(stderr, "Error setting hemisphere.\n\n");
+  //   return 1;
+  // }
 
   /* switch output to centimeters */
   //liberty_send(handle, "u1\r");
-//  device->device_clear_input(); //right now, we just ignore the answer
-
+  //device->device_clear_input(); //right now, we just ignore the answer
   device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
@@ -403,19 +404,33 @@ int main(int argc, char** argv) {
 
   /* enable continuous mode (get data points continously) */
   printf("Enabling continuous data mode...\n");
-  retval = device->device_data_mode(DATA_CONTINUOUS);
-  if (retval)
-  {
-    fprintf(stderr, "Error setting data mode to continuous.\n\n");
-    return 1;
-  }
+  // retval = device->device_data_mode(DATA_CONTINUOUS);
+  // if (retval)
+  // {
+  //   fprintf(stderr, "Error setting data mode to continuous.\n\n");
+  //   return 1;
+  // }
 
   gettimeofday(&tv, NULL);
   printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
-  ros::Rate rate(960);
+  ros::Rate rate(240);
+
+  retval = device->device_data_mode(DATA_CONTINUOUS);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data mode to continuous.\n\n");
+    return 1;
+  }
+  
+  retval = device->device_data_mode(DATA_CONTINUOUS);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data mode to continuous.\n\n");
+    return 1;
+  }
 
   // Start main loop
   while(ros::ok()) {
