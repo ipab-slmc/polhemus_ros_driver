@@ -326,7 +326,7 @@ int main(int argc, char** argv) {
 	  abort();
   }
 
-
+  device->endpoint_out_max_packet_size = g_usbinfo.epout_maxPktsize;
   device->device_handle = g_usbhnd;
 
   retval = device->device_reset();
@@ -349,27 +349,13 @@ int main(int argc, char** argv) {
     nstations = device->station_count;
   }
 
-  /* define which information to get per sensor (called a station
-     by polhemus)
-
-     o* applies to all stations
-
-     if this is changed, the station_t struct or (***) below has to be edited accordingly 
-  */
+  // define quaternion data type
   retval = device->define_quat_data_type();
   printf("Setting data type to quaternion\n");
   if (retval)
   {
     fprintf(stderr, "Error setting data type.\n\n");
     return 1;
-  }
-
-  retval = device->set_source(0);
-  printf("Setting source to 0\n");
-  if (retval)
-  {
-    fprintf(stderr, "Error source to 0.\n\n");
-    // return 1;
   }
 
   // Calibration service
@@ -379,39 +365,27 @@ int main(int argc, char** argv) {
   ros::ServiceServer service2 = nh.advertiseService("persistent_cfg", &Polhemus::persist_srv, device);
   printf("Service ready to persist cfg.\n");
 
-  /* set output hemisphere -- this will produce a response which we're
-     ignoring
-  */
+  // get param to set hemisphere
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
 
   printf("Setting the output hemisphere\n");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
-  // if (retval)
-  // {
-  //   fprintf(stderr, "Error setting hemisphere.\n\n");
-  //   return 1;
-  // }
+  if (retval)
+  {
+    fprintf(stderr, "Error setting hemisphere.\n\n");
+    return 1;
+  }
 
-  /* switch output to centimeters */
-  //liberty_send(handle, "u1\r");
-  //device->device_clear_input(); //right now, we just ignore the answer
+  device->device_clear_input();
+
   device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
   signal(SIGINT, signal_handler);
 
   go_on = 1;
-
-  /* enable continuous mode (get data points continously) */
-  printf("Enabling continuous data mode...\n");
-  // retval = device->device_data_mode(DATA_CONTINUOUS);
-  // if (retval)
-  // {
-  //   fprintf(stderr, "Error setting data mode to continuous.\n\n");
-  //   return 1;
-  // }
 
   gettimeofday(&tv, NULL);
   printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
@@ -420,6 +394,7 @@ int main(int argc, char** argv) {
   geometry_msgs::TransformStamped transformStamped;
   ros::Rate rate(240);
 
+  printf("Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
@@ -440,7 +415,6 @@ int main(int argc, char** argv) {
       break;
 
     // Update polhemus
-    // (***)
     int sensor_count = device->receive_pno_data_frame();
     if (sensor_count > 0)
     {
@@ -472,8 +446,7 @@ int main(int argc, char** argv) {
     rate.sleep();
   }
 
-  // Shutdown
-  device->device_data_mode(DATA_RESET); // stop continuous mode
+  // // Shutdown
   libusb_close(g_usbhnd);
   delete device;
 

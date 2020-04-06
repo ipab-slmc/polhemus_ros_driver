@@ -29,14 +29,16 @@
 #include "polhemus_ros_driver/liberty_protocol.h"
 #include <libusb-1.0/libusb.h>
 
-
 #define LIBERTY_ENDPOINT_IN 0x88
 #define LIBERTY_ENDPOINT_OUT 0x4
+#define LIBERTY_RX_BUF_SIZE  0x0200
+#define LIBERTY_TX_BUF_SIZE  0x0200
 
 class Liberty : public Polhemus {
 public:
   Liberty(void);
 	~Liberty(void);
+    void device_clear_input(void);
 	int request_num_of_stations(void);
 	int device_reset(void);
 	void device_binary_mode(void);
@@ -47,6 +49,8 @@ public:
 	int define_quat_data_type(void);
 	int set_hemisphere(int x, int y, int z);
 	bool calibrate(void);
+    uint8_t g_txbuf[LIBERTY_TX_BUF_SIZE];
+    uint8_t g_rxbuf[LIBERTY_RX_BUF_SIZE];
 private:
 	liberty_pno_frame_t *stations;
 };

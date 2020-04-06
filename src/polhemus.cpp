@@ -47,7 +47,7 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
     retval = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
     fprintf(stderr, "write count wrong.\n\n");
   }
-  else if ((nActual % MAX_PACKET_SIZE) == 0)
+  else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
     fprintf(stderr, "larger than max packet size.\n\n");
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
@@ -100,16 +100,6 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
   return retval;
 }
 
-void Polhemus::device_clear_input(void)
-{
-  g_nrxcount = RX_BUF_SIZE;
-
-  while(g_nrxcount > 0)
-  {
-    device_read(g_rxbuf, g_nrxcount, true);
-  }
-}
-
 bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res)
 {
   printf("Calibration request...");
@@ -122,6 +112,10 @@ bool Polhemus::persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_
   printf("Making config persistent");
   res.success = persist_commands();
   return true;
+}
+
+void Polhemus::device_clear_input(void)
+{
 }
 
 int Polhemus::device_reset(void)

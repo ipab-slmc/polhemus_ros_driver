@@ -19,9 +19,6 @@
 #define TIMEOUT 1000
 #define CRC_BYTES 4
 #define SEUID 0
-#define MAX_PACKET_SIZE 64
-#define TX_BUF_SIZE  0x400
-#define RX_BUF_SIZE  0x400
 #define VPUSB_WRITE_TIMEOUT_MS 50
 #define VPUSB_READ_TIMEOUT_MS 300
 
@@ -73,9 +70,8 @@ public:
   int station_count;
   uint8_t endpoint_in;
   uint8_t endpoint_out;
+  uint16_t endpoint_out_max_packet_size;
   int g_ntxcount;
   int g_nrxcount;
-  uint8_t g_txbuf[TX_BUF_SIZE];
-  uint8_t g_rxbuf[RX_BUF_SIZE];
 };
 #endif

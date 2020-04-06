@@ -44,14 +44,22 @@ Liberty::~Liberty(void) {}
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
+void Liberty::device_clear_input(void)
+{
+  g_nrxcount = LIBERTY_RX_BUF_SIZE;
+  while(g_nrxcount > 0)
+  {
+    device_read(g_rxbuf, g_nrxcount, true);
+  }
+}
+
 int Liberty::device_reset(void)
 {
-  // reset c, this may produce "invalid command" answers
-  unsigned char command[] = "p\r";
+  unsigned char command[] = "\rp\r";
   int size = sizeof(command)-1;
-  device_send(command, size);
-  // remove everything from input
+  int retval = device_send(command, size);
   device_clear_input();
+  return retval;
 }
 
 void Liberty::device_binary_mode(void)
@@ -99,9 +107,12 @@ int Liberty::receive_pno_data_frame(void)
  
   if (retval)
   {
-    fprintf(stderr, "Receive failed.\n");
+    ;
   }
-  return station_count;
+  else
+  {
+    return station_count;
+  }
 }
 
 int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
@@ -121,33 +132,28 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 
 int Liberty::define_quat_data_type(void)
 {
+  int retval = 0;
   unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
   int size = sizeof(command)-1;
-  device_send(command, size);
-  return 0;
+  retval = device_send(command, size);
+  return retval;
 }
 
 int Liberty::request_num_of_stations(void)
 {
-  int retval = 0;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
   int size = sizeof(command)-1;
   int size_reply = sizeof(resp);
   device_send(command, size);
-  retval = device_read(&resp, size_reply, true);
+  device_read(&resp, size_reply, true);
   fprintf(stderr, "Request num of station: init_cmd: %d, station: %d, error: %d, size: %d, active: %d, detected: %d\n", resp.head.init_cmd, resp.head.station, resp.head.error, resp.head.size, resp.active, resp.detected);
-
-  g_nrxcount = RX_BUF_SIZE;
-
-  //retval = device_read(g_rxbuf, g_nrxcount, true);
 
   if (resp.head.init_cmd == 21) {
     station_count = count_bits(resp.detected & resp.active);
-    return retval;
+    return 0;
   }
   else {
-    fprintf(stderr, "init command returned: %d %d %d \n", resp.head.init_cmd, resp.head.station, resp.head.error);
     return 0;
   }
 }
@@ -155,11 +161,12 @@ int Liberty::request_num_of_stations(void)
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Liberty::set_hemisphere(int x, int y, int z)
 {
+  int retval = 0;
   unsigned char command[32];
   int size = sizeof(command)-1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
-  device_send(command, size);
-  return true;
+  retval = device_send(command, size);
+  return retval;
 }
 
 bool Liberty::calibrate(void)
