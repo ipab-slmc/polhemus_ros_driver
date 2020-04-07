@@ -78,11 +78,12 @@ int Liberty::device_data_mode(data_mode_e mode)
 {
 
   int size;
+  int retval;
   switch (mode)
   {
     case DATA_CONTINUOUS:
     {
-      unsigned char command[] = "c\r";
+      unsigned char command[] = "c\rc\r";
       size = sizeof(command)-1;
       device_send(command, size);
       return 0;
@@ -104,14 +105,13 @@ int Liberty::receive_pno_data_frame(void)
   int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
   retval = device_read(stations, g_nrxcount, true);
- 
-  if (retval)
+  if (stations->head.init_cmd == 67)
   {
-    ;
+    return station_count;
   }
   else
   {
-    return station_count;
+    return retval;
   }
 }
 

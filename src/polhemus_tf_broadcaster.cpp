@@ -380,13 +380,6 @@ int main(int argc, char** argv) {
 
   go_on = 1;
 
-  gettimeofday(&tv, NULL);
-  printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
-
-  static tf2_ros::TransformBroadcaster br;
-  geometry_msgs::TransformStamped transformStamped;
-  ros::Rate rate(240);
-
   printf("Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
@@ -394,13 +387,13 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Error setting data mode to continuous.\n\n");
     return 1;
   }
-  
-  retval = device->device_data_mode(DATA_CONTINUOUS);
-  if (retval)
-  {
-    fprintf(stderr, "Error setting data mode to continuous.\n\n");
-    return 1;
-  }
+
+  gettimeofday(&tv, NULL);
+  printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
+
+  static tf2_ros::TransformBroadcaster br;
+  geometry_msgs::TransformStamped transformStamped;
+  ros::Rate rate(240);
 
   // Start main loop
   while(ros::ok()) {
