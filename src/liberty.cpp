@@ -147,14 +147,13 @@ int Liberty::request_num_of_stations(void)
   int size_reply = sizeof(resp);
   device_send(command, size);
   device_read(&resp, size_reply, true);
-  fprintf(stderr, "Request num of station: init_cmd: %d, station: %d, error: %d, size: %d, active: %d, detected: %d\n", resp.head.init_cmd, resp.head.station, resp.head.error, resp.head.size, resp.active, resp.detected);
 
   if (resp.head.init_cmd == 21) {
     station_count = count_bits(resp.detected & resp.active);
     return 0;
   }
   else {
-    return 0;
+    return 1;
   }
 }
 

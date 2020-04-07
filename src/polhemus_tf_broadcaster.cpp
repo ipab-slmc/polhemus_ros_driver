@@ -329,13 +329,6 @@ int main(int argc, char** argv) {
   device->endpoint_out_max_packet_size = g_usbinfo.epout_maxPktsize;
   device->device_handle = g_usbhnd;
 
-  retval = device->device_reset();
-  if (retval)
-  {
-    fprintf(stderr, "Error resetting device.\n\n");
-    return 1;
-  }
-
   device->device_binary_mode(); // activate binary mode
   retval = device->request_num_of_stations();
   if (retval)
@@ -446,6 +439,12 @@ int main(int argc, char** argv) {
     rate.sleep();
   }
 
+  retval = device->device_reset();
+  if (retval)
+  {
+    fprintf(stderr, "Error resetting device.\n\n");
+    return 1;
+  }
   // // Shutdown
   libusb_close(g_usbhnd);
   delete device;
