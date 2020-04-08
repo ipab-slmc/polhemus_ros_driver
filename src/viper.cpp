@@ -107,7 +107,10 @@ int Viper::receive_pno_data_frame(void)
     }
     // bitmap of active sensors
     sensor_map = pno.SensorMap();
-    retval = pno.SensorCount();
+
+    // update this as a sensor may have been dropped
+    station_count = pno.SensorCount();
+    return station_count;
   }
   return retval;
 }
@@ -116,7 +119,6 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
   // Set translation (in metres)
   int retval = 0;
-
   transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum);
   transform->transform.translation.x = pno.SensFrame(count)->pno.pos[0];
   transform->transform.translation.y = pno.SensFrame(count)->pno.pos[1];
@@ -130,14 +132,28 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
   return retval;
 }
 
-int Viper::define_quat_data_type(void)
+int Viper::define_data_type(data_type_e data_type)
 {
   int retval = 0;
+
   viper_cmds_e cmd_type = CMD_UNITS;
   viper_cmd_actions_e action = CMD_ACTION_SET;
 
   viper_units_config_t cfg;
-  cfg.ori_units = ORI_QUATERNION;
+
+  if (data_type == DATA_TYPE_QUAT)
+  {
+    cfg.ori_units = ORI_QUATERNION;
+  }
+  else if (data_type == DATA_TYPE_EULER)
+  {
+    cfg.ori_units = ORI_EULER_DEGREE;
+  }
+  else
+  {
+    return 1;
+  }
+
   cfg.pos_units = POS_METER;
   CVPcmd viper_command;
   viper_command.Fill(cmd_type, action, -1, 0, &cfg, sizeof(cfg));
@@ -227,7 +243,7 @@ int Viper::set_hemisphere(int x, int y, int z)
   return retval;
 }
 
-int Viper::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4)
+int Viper::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
 {
   int retval = 0;
   viper_cmds_e cmd_type = CMD_BORESIGHT;
@@ -239,7 +255,7 @@ int Viper::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int
   cfg.params[3] = arg_4;
   CVPcmd viper_command;
 
-  viper_command.Fill(cmd_type, action, -1, reset_origin, &cfg, sizeof(cfg));
+  viper_command.Fill(cmd_type, action, station, reset_origin, &cfg, sizeof(cfg));
   viper_command.Prepare(g_txbuf, g_ntxcount);
 
   int nBytes = g_ntxcount;
@@ -282,9 +298,76 @@ int Viper::set_source(int source)
   return retval;
 }
 
+int Viper::send_saved_calibration(float x, float y, float z, int station_id)
+{
+  int retval = 1;
+
+  // set data type to euler first
+  int result = define_data_type(DATA_TYPE_EULER);
+  if (!result)
+  {
+    set_boresight(false, station_id, x, y, z);
+    retval = 0;
+  }
+  return retval;
+
+}
+
 bool Viper::calibrate(void)
 {
-  set_boresight(false, 1, 0, 0, 0);
+  for (int i = 0; i < pno.SensorCount(); ++i)
+  {
+    tf2::Quaternion q(
+        pno.SensFrame(i)->pno.ori[1],
+        pno.SensFrame(i)->pno.ori[2],
+        pno.SensFrame(i)->pno.ori[3],
+        pno.SensFrame(i)->pno.ori[0]);
+
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    fprintf(stderr, "quat x: %f\n", pno.SensFrame(i)->pno.ori[1]);
+    fprintf(stderr, "quat y: %f\n", pno.SensFrame(i)->pno.ori[2]);
+    fprintf(stderr, "quat z: %f\n", pno.SensFrame(i)->pno.ori[3]);
+    fprintf(stderr, "quat w: %f\n", pno.SensFrame(i)->pno.ori[0]);
+
+    // convert to degrees
+    roll = (roll * 180) / 3.14;
+    pitch = (pitch * 180) / 3.14;
+    yaw = (yaw * 180) / 3.14;
+
+    fprintf(stderr, "roll: %f\n", roll);
+    fprintf(stderr, "pitch: %f\n", pitch);
+    fprintf(stderr, "yaw: %f\n", yaw);
+
+    int result = define_data_type(DATA_TYPE_EULER);
+    if (!result)
+    {
+      fprintf(stderr, "Calibrating station %d.\n", i);
+      //set_boresight(false, i, 1, 0, 0, 0);
+      set_boresight(false, i, -roll, -pitch, -yaw);
+    }
+
+    result = define_data_type(DATA_TYPE_QUAT);
+
+    // save values to config file
+    std::string x_name = "/viper_calibration/rotations/station_" + std::to_string(i) + "/x";
+    std::string y_name = "/viper_calibration/rotations/station_" + std::to_string(i) + "/y";
+    std::string z_name = "/viper_calibration/rotations/station_" + std::to_string(i) + "/z";
+
+    double x, y, z;
+
+    x = - roll;
+    y = - pitch;
+    z = - yaw;
+
+    nh->setParam(x_name, roll);
+    nh->setParam(y_name, pitch);
+    nh->setParam(z_name, yaw);
+    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /viper_calibration");
+  }
+
+  // YAML::Node node, _baseNode = YAML::LoadFile("cfg/calibration.yaml");
 
   return true;
 }

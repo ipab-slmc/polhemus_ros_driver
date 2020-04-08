@@ -39,17 +39,17 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
   if (retval)
   {
-    //r = (r << 16) | E_VPERR_LIBUSB
+    fprintf(stderr, "USB write failed with code %d.\n\n", retval);
   }
   else if (nActual != size)
   {
     size = nActual;
-    retval = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
+    retval = 1;
     fprintf(stderr, "write count wrong.\n\n");
   }
   else if ((nActual % MAX_PACKET_SIZE) == 0)
   {
-    fprintf(stderr, "larger than max packet size.\n\n");
+    fprintf(stderr, "Device write, size larger than max packet size.\n\n");
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
   return retval;
@@ -58,26 +58,26 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 int Polhemus::device_init(void)
 {
   if (libusb_set_configuration(device_handle, CONFIGURATION) != 0)
-    fprintf(stderr, "could not set usb configuration to %d\n", CONFIGURATION);
+    fprintf(stderr, "Could not set usb configuration to %d\n", CONFIGURATION);
 
   if (libusb_claim_interface(device_handle, INTERFACE) != 0)
   {
-    fprintf(stderr, "could not claim usb interface %d\n", INTERFACE);
-    return 0;
+    fprintf(stderr, "Could not claim usb interface %d\n", INTERFACE);
+    return 1;
   }
 
   device_reset();
-  return 1;
+  return 0;
 }
 
 int Polhemus::device_send(uint8_t *cmd, int &count)
 {
-  if (device_write(cmd, count, TIMEOUT) != count)
+  if (device_write(cmd, count, TIMEOUT))
   {
-    warn("sending cmd `%s' to device failed\n");
-    return 0;
+    warn("Sending cmd `%s' to device failed\n");
+    return 1;
   }
-  return 1;
+  return 0;
 }
 
 int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
@@ -90,7 +90,7 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 
   if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
   {
-    retval = 0;
+    retval = 1;
     size = 0;
   } else
   {
@@ -136,7 +136,7 @@ int Polhemus::set_hemisphere(int x, int y, int z)
 {
 }
 
-int Polhemus::define_quat_data_type(void)
+int Polhemus::define_data_type(data_type_e data_type)
 {
 }
 
@@ -160,7 +160,11 @@ int Polhemus::device_data_mode(data_mode_e mode)
 {
 }
 
-int Polhemus::set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4)
+int Polhemus::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
+{
+}
+
+int Polhemus::send_saved_calibration(float x, float y, float z, int station_id)
 {
 }
 

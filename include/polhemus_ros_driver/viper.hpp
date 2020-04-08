@@ -8,7 +8,6 @@
 
 #include <polhemus_ros_driver/polhemus.hpp>
 #include <polhemus_ros_driver/viper_protocol.h>
-#include <libusb-1.0/libusb.h>
 
 
 #define VIPER_ENDPOINT_IN 0x81
@@ -24,7 +23,7 @@ public:
   int device_data_mode(data_mode_e mode);
   int receive_pno_data_frame(void);
   int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
-  int define_quat_data_type(void);
+  int define_data_type(data_type_e data_type);
   int set_hemisphere(int x, int y, int z);
 private:
   uint32_t calc_crc_bytes(uint8_t *data, uint32_t count);
@@ -33,8 +32,9 @@ private:
                                     uint32_t payload_size = 0);
   void prepare_frame(uint8_t buffer[], int &txbytes);
   int receive_data_frame(viper_cmds_e cmd_type);
-  int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4 = 0);
+  int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
   int set_source(int source);
+  int send_saved_calibration(float x, float y, float z, int station_id);
   bool calibrate(void);
   bool persist_commands(void);
   CVPSeuPno pno;

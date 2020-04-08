@@ -55,6 +55,9 @@
 #define LIBERTY_PRODUCT 0xff20
 #define VIPER_PRODUCT 0xbf01
 
+#define LIBERTY_ENDPOINT_IN 0x88
+#define LIBERTY_ENDPOINT_OUT 0x4
+
 
 typedef struct _vp_usbdevinfo {
   int usbDevIndex;
@@ -98,7 +101,7 @@ static void print_ascii(FILE *stream, const char *buf, size_t size) {
   fprintf(stream, "\n");
 }
 
-void ReleaseUSB(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo)
+void release_usb(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo)
 {
   if ((usbhnd == 0) || (*usbhnd == 0))
     return;
@@ -198,7 +201,7 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
     return -1;
 
   if (*usbhnd)
-    ReleaseUSB(usbhnd, usbinfo);
+    release_usb(usbhnd, usbinfo);
 
   vp_usbdevinfo arrDevInfo[VPUSB_MAX_DISCOVERABLE];
   std::size_t arrcount = VPUSB_MAX_DISCOVERABLE;
@@ -286,8 +289,8 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "polhemus_tf_broadcaster");
   ros::NodeHandle nh("/polhemus_tf_broadcaster");
 
-
   nh.getParam("/product_type", product_type);
+
   if (product_type == "liberty")
   {
     retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, LIBERTY_PRODUCT);
@@ -320,8 +323,28 @@ int main(int argc, char** argv) {
 	  abort();
   }
 
-  device->endpoint_in = g_usbinfo.ep_in;
-  device->endpoint_out = g_usbinfo.ep_out;
+  device->nh = &nh;
+
+  retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, product_id);
+
+  if (retval)
+  {
+    //error connecting
+    fprintf(stderr, "Error connecting to device.\n\n");
+    return 1;
+  }
+
+  if (product_type == "liberty")
+  {
+    // for liberty there are two sets of data endpoints, hardcoding for now.
+    device->endpoint_in = LIBERTY_ENDPOINT_IN;
+    device->endpoint_out = LIBERTY_ENDPOINT_OUT;
+  }
+  else
+  {
+    device->endpoint_in = g_usbinfo.ep_in;
+    device->endpoint_out = g_usbinfo.ep_out;
+  }
 
   device->device_handle = g_usbhnd;
 
@@ -333,6 +356,7 @@ int main(int argc, char** argv) {
   }
 
   device->device_binary_mode(); // activate binary mode
+
   retval = device->request_num_of_stations();
   if (retval)
   {
@@ -352,7 +376,44 @@ int main(int argc, char** argv) {
 
      if this is changed, the station_t struct or (***) below has to be edited accordingly 
   */
-  retval = device->define_quat_data_type();
+
+  // send the calibration saved in calibration.yaml
+  // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
+  for (i=0; i < nstations; i++)
+  {
+    if (nh.hasParam("/" + product_type + "_calibration/rotations/station_" + std::to_string(i)))
+    {
+      std::string x_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/x";
+      std::string y_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/y";
+      std::string z_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/z";
+      float x;
+      float y;
+      float z;
+      // read x y and z rotations from param server
+      nh.getParam(x_name, x);
+      nh.getParam(y_name, y);
+      nh.getParam(z_name, z);
+      if (x == 0 & y == 0 & z == 0)
+      {
+        // no previous calibration exists
+        fprintf(stderr, "Sensors have not been calibrated, please calibrate before proceeding!!!\n\n");
+        break;
+      }
+      else
+      {
+        fprintf(stderr, "Calibrating station %d.\n", i);
+        device->send_saved_calibration(x, y, z, i);
+      }
+    }
+    else
+    {
+      // no previous calibration exists
+      fprintf(stderr, "Station could not be found in calibration, please calibrate before proceeding!!!\n\n");
+      break;
+    }
+  }
+
+  retval = device->define_data_type(DATA_TYPE_QUAT);
   printf("Setting data type to quaternion\n");
   if (retval)
   {
@@ -360,20 +421,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  retval = device->set_source(0);
-  printf("Setting source to 0\n");
-  if (retval)
-  {
-    fprintf(stderr, "Error source to 0.\n\n");
-    // return 1;
-  }
-
   // Calibration service
   ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
   printf("Service ready to calibrate the sensors.\n");
-
-  ros::ServiceServer service2 = nh.advertiseService("persistent_cfg", &Polhemus::persist_srv, device);
-  printf("Service ready to persist cfg.\n");
 
   /* set output hemisphere -- this will produce a response which we're
      ignoring

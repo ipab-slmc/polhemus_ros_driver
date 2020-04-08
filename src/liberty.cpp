@@ -48,7 +48,7 @@ int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
   unsigned char command[] = "\rp\r";
-  int size = sizeof(command)-1;
+  int size = sizeof(command) - 1;
   device_send(command, size);
   // remove everything from input
   device_clear_input();
@@ -57,7 +57,7 @@ int Liberty::device_reset(void)
 void Liberty::device_binary_mode(void)
 {
   unsigned char command[] = "f1\r";
-  int size = sizeof(command)-1;
+  int size = sizeof(command) - 1;
   device_send(command, size);
 }
 
@@ -75,14 +75,14 @@ int Liberty::device_data_mode(data_mode_e mode)
     case DATA_CONTINUOUS:
     {
       unsigned char command[] = "c\r";
-      size = sizeof(command);
+      size = sizeof(command) - 1;
       device_send(command, size);
       return 0;
     }
     case DATA_SINGLE:
     {
       unsigned char command[] = "p";
-      size = sizeof(command);
+      size = sizeof(command) - 1;
       device_send(command, size);
       return 0;
     }
@@ -98,14 +98,18 @@ int Liberty::receive_pno_data_frame(void)
   retval = device_read(stations, g_nrxcount, true);
   if (retval)
   {
-    fprintf(stderr, "Receive failed.\n");
+    fprintf(stderr, "PNO receive failed.\n");
   }
+  // update this as a sensor may have been dropped
+  station_count = g_nrxcount / sizeof(liberty_pno_frame_t);
+  retval = station_count;
 }
 
 int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
+  int retval = 0;
   // Set translation (conversion: inches -> meters)
-  transform->child_frame_id = "polhemus_station_" + std::to_string(count);
+  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[count].head.station);
   transform->transform.translation.x = 0.0254*stations[count].x;
   transform->transform.translation.y = 0.0254*stations[count].y;
   transform->transform.translation.z = 0.0254*stations[count].z;
@@ -115,12 +119,30 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
   transform->transform.rotation.x = stations[count].quaternion[1];
   transform->transform.rotation.y = stations[count].quaternion[2];
   transform->transform.rotation.z = stations[count].quaternion[3];
+
+  return retval;
 }
 
-int Liberty::define_quat_data_type(void)
+int Liberty::define_data_type(data_type_e data_type)
 {
-  unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
-  int size = sizeof(command)-1;
+  unsigned char command[1];
+
+  if (data_type == DATA_TYPE_QUAT)
+  {
+    unsigned char command[15] = "O*,8,9,11,3,7\r";  // quaternions
+
+  }
+  else if (data_type == DATA_TYPE_EULER)
+  {
+    unsigned char command[15] = "O*,8,9,11,3,5\r";  // euler
+  }
+  else
+  {
+    return 1;
+  }
+
+  int size = sizeof(command) - 1;
+
   device_send(command, size);
   return 0;
 }
@@ -130,7 +152,7 @@ int Liberty::request_num_of_stations(void)
   int retval = 0;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
-  int size = sizeof(command)-1;
+  int size = sizeof(command) - 1;
   int size_reply = sizeof(resp);
   device_send(command, size);
   retval = device_read(&resp, size_reply, true);
@@ -138,33 +160,92 @@ int Liberty::request_num_of_stations(void)
 
   g_nrxcount = RX_BUF_SIZE;
 
-  //retval = device_read(g_rxbuf, g_nrxcount, true);
-
   if (resp.head.init_cmd == 21) {
     station_count = count_bits(resp.detected & resp.active);
-    return station_count;
-  }
-  else {
-    fprintf(stderr, "init command returned: %d %d %d \n", resp.head.init_cmd, resp.head.station, resp.head.error);
     return 0;
+  }
+  else
+  {
+    fprintf(stderr, "Station cfg request failed, command returned: %d %d %d \n", resp.head.init_cmd,
+        resp.head.station, resp.head.error);
+    return 1;
   }
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Liberty::set_hemisphere(int x, int y, int z)
 {
-  unsigned char command[32];
-  int size = sizeof(command);
+  unsigned char command[6];
+  int size = sizeof(command) - 1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
   device_send(command, size);
   return true;
 }
 
+int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
+{
+  unsigned char command[11];
+  int size = sizeof(command) - 1;
+  if (station == -1)
+  {
+    snprintf((char *)command, size, "b*,%f,%f,%f,%d\r", arg_1, arg_2, arg_3, reset_origin);
+  }
+  else
+  {
+    snprintf((char *)command, size, "b%u,%f,%f,%f,%d\r", station, arg_1, arg_2, arg_3, reset_origin);
+  }
+
+  device_send(command, size);
+  return 0;
+}
+
+int Liberty::send_saved_calibration(float x, float y, float z, int station_id)
+{
+  int retval = 1;
+
+  set_boresight(false, station_id, x, y, z);
+  retval = 0;
+
+  return retval;
+}
+
 bool Liberty::calibrate(void)
 {
-  unsigned char command[] = "b*,0,0,0,0\r";
-  int size = sizeof(command);
-  device_send(command, size);
+  for (int i = 0; i < station_count; ++i)
+  {
+    tf2::Quaternion q(
+        stations[i].quaternion[1],
+        stations[i].quaternion[2],
+        stations[i].quaternion[3],
+        stations[i].quaternion[0]);
+
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    // convert to degrees
+    roll = (roll * 180) / 3.14;
+    pitch = (pitch * 180) / 3.14;
+    yaw = (yaw * 180) / 3.14;
+
+    set_boresight(false, i, yaw, pitch, roll);
+
+    // save values to config file
+    std::string x_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/x";
+    std::string y_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/y";
+    std::string z_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/z";
+
+    double x, y, z;
+
+    x = roll;
+    y = pitch;
+    z = yaw;
+
+    nh->setParam(x_name, roll);
+    nh->setParam(y_name, pitch);
+    nh->setParam(z_name, yaw);
+    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /liberty_calibration");
+
+  }
   return true;
 }
 

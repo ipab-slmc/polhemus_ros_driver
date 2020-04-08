@@ -27,7 +27,6 @@
 
 #include <polhemus_ros_driver/polhemus.hpp>
 #include "polhemus_ros_driver/liberty_protocol.h"
-#include <libusb-1.0/libusb.h>
 
 
 #define LIBERTY_ENDPOINT_IN 0x88
@@ -44,10 +43,13 @@ public:
 	int receive_pno_data_frame(void);
 	int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
 	void generate_data_structure(void);
-	int define_quat_data_type(void);
+	int define_data_type(data_type_e data_type);
 	int set_hemisphere(int x, int y, int z);
+	int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
+	int send_saved_calibration(float x, float y, float z, int station_id);
 	bool calibrate(void);
 private:
 	liberty_pno_frame_t *stations;
+
 };
 #endif

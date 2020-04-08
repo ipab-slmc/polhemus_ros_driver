@@ -6,12 +6,16 @@
 #ifndef POLHEMUS_H
 #define POLHEMUS_H
 
+#include <ros/ros.h>
 #include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <string>
 #include <geometry_msgs/TransformStamped.h>
 #include "polhemus_ros_driver/calibrate.h"
 #include "polhemus_ros_driver/persist.h"
+#include <tf2_ros/transform_listener.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <yaml.h>
 
 
 #define INTERFACE 0
@@ -28,22 +32,23 @@
 /* make control character out of ordinary character */
 #define control(c) ((c) & 0x1f)
 
-typedef struct buffert_t {
-    uint8_t buf[8192];
-    int fill;
-} buffer_t;
-
 typedef enum data_mode_e {
     DATA_CONTINUOUS,
     DATA_SINGLE,
     DATA_RESET
 } data_mode_e;
 
+typedef enum data_type_e {
+    DATA_TYPE_QUAT,
+    DATA_TYPE_EULER
+} data_type_e;
+
 class Polhemus
 {
 public:
   virtual ~Polhemus(void);
   int count_bits(uint16_t v);
+  ros::NodeHandle *nh;
 
   /* set up usb interface and configuration, send initial magic and reset */
   int device_init(void);
@@ -59,12 +64,13 @@ public:
   int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
   int device_write(uint8_t *buf, int size, int timeout);
   virtual int device_reset(void);
-  virtual int define_quat_data_type(void);
+  virtual int define_data_type(data_type_e data_type);
   virtual void generate_data_structure(void);
   virtual int set_hemisphere(int x, int y, int z);
   virtual int request_num_of_stations(void);
-  virtual int set_boresight(bool reset_origin, int arg_1, int arg_2, int arg_3, int arg_4 = 0);
+  virtual int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
   virtual int set_source(int source);
+  virtual int send_saved_calibration(float x, float y, float z, int station_id);
   bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
   bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
   virtual bool calibrate(void);
@@ -77,5 +83,6 @@ public:
   int g_nrxcount;
   uint8_t g_txbuf[TX_BUF_SIZE];
   uint8_t g_rxbuf[RX_BUF_SIZE];
+  std::vector<std::string> station_names_;
 };
 #endif
