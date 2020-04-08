@@ -18,7 +18,7 @@
 #define warn(as...)
 #endif
 
-Polhemus::Polhemus(uint8_t rx_buffer_size, uint8_t tx_buffer_size):
+Polhemus::Polhemus(uint16_t rx_buffer_size, uint16_t tx_buffer_size):
   g_rxbuf(new uint8_t[rx_buffer_size]), g_txbuf(new uint8_t[tx_buffer_size])
 {
 }

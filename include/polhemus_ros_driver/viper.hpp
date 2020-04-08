@@ -19,7 +19,7 @@
 class Viper: public Polhemus
 {
 public:
-  Viper(uint8_t rx_buffer_size, uint8_t tx_buffer_size);
+  Viper(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
   ~Viper(void);
   int request_num_of_stations(void);
   int device_reset(void);

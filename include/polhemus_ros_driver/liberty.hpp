@@ -36,7 +36,7 @@
 
 class Liberty : public Polhemus {
 public:
-    Liberty(uint8_t rx_buffer_size, uint8_t tx_buffer_size);
+    Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
 	~Liberty(void);
 	int request_num_of_stations(void);
 	int device_reset(void);

@@ -33,7 +33,7 @@
 #define warn(as...)
 #endif
 
-Liberty::Liberty(uint8_t rx_buffer_size, uint8_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
+Liberty::Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
 }
 

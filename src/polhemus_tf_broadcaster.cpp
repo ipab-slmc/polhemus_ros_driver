@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = VIPER_PRODUCT;
-	  device = new Viper(LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
+	  device = new Viper(VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
     fprintf(stderr, "Initialising Viper device.\n\n");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;

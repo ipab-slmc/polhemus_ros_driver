@@ -16,7 +16,7 @@
 
 #define VALIDATE_CONTEXT(pctx, ctx) {pctx=(CVPcontext*)ctx;if (!(CVPcontext::findPctx(pctx))) return E_VPERR_INVALID_CONTEXT; }
 
-Viper::Viper(uint8_t rx_buffer_size, uint8_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
+Viper::Viper(uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
 }
 

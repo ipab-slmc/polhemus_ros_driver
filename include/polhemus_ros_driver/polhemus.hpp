@@ -39,7 +39,7 @@ typedef enum data_mode_e {
 class Polhemus
 {
 public:
-  Polhemus(uint8_t rx_buffer_size, uint8_t tx_buffer_size);
+  Polhemus(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
   virtual ~Polhemus(void);
   int count_bits(uint16_t v);
 
@@ -72,8 +72,8 @@ public:
   uint8_t endpoint_in;
   uint8_t endpoint_out;
   uint16_t endpoint_out_max_packet_size;
-  uint8_t rx_buffer_size;
-  uint8_t tx_buffer_size;
+  uint16_t rx_buffer_size;
+  uint16_t tx_buffer_size;
   int g_ntxcount;
   int g_nrxcount;
   uint8_t* g_txbuf;
