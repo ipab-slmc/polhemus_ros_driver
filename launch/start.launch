@@ -2,7 +2,7 @@
   <arg name="x_hs" default="0" />
   <arg name="y_hs" default="0" />
   <arg name="z_hs" default="-1" />
-  <arg name="device_name" default="viper"/>
+  <arg name="device_name" default="liberty"/>
 
   <node pkg="polhemus_ros_driver" type="polhemus_tf_broadcaster" name="polhemus_tf_broadcaster" output="screen"/>
 

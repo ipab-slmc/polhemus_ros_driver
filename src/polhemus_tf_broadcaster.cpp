@@ -378,8 +378,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  device->device_clear_input();
-
   device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
