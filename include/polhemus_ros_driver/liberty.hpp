@@ -36,9 +36,8 @@
 
 class Liberty : public Polhemus {
 public:
-  Liberty(void);
+    Liberty(uint8_t rx_buffer_size, uint8_t tx_buffer_size);
 	~Liberty(void);
-    void device_clear_input(void);
 	int request_num_of_stations(void);
 	int device_reset(void);
 	void device_binary_mode(void);
@@ -49,8 +48,6 @@ public:
 	int define_quat_data_type(void);
 	int set_hemisphere(int x, int y, int z);
 	bool calibrate(void);
-    uint8_t g_txbuf[LIBERTY_TX_BUF_SIZE];
-    uint8_t g_rxbuf[LIBERTY_RX_BUF_SIZE];
 private:
 	liberty_pno_frame_t *stations;
 };

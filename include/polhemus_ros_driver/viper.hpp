@@ -19,9 +19,8 @@
 class Viper: public Polhemus
 {
 public:
-  Viper(void);
+  Viper(uint8_t rx_buffer_size, uint8_t tx_buffer_size);
   ~Viper(void);
-  void device_clear_input(void);
   int request_num_of_stations(void);
   int device_reset(void);
   int device_data_mode(data_mode_e mode);
@@ -42,7 +41,5 @@ private:
   bool persist_commands(void);
   CVPSeuPno pno;
   uint32_t sensor_map;
-  uint8_t g_rxbuf[VIPER_RX_BUF_SIZE];
-  uint8_t g_txbuf[VIPER_TX_BUF_SIZE];
 };
 #endif

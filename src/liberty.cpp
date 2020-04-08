@@ -33,10 +33,10 @@
 #define warn(as...)
 #endif
 
-
-Liberty::Liberty(void) : Polhemus()
+Liberty::Liberty(uint8_t rx_buffer_size, uint8_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
 }
+
 Liberty::~Liberty(void) {}
 
 /** this resets previous `c' commands and puts the device in binary mode
@@ -44,14 +44,6 @@ Liberty::~Liberty(void) {}
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
-void Liberty::device_clear_input(void)
-{
-  g_nrxcount = LIBERTY_RX_BUF_SIZE;
-  while(g_nrxcount > 0)
-  {
-    device_read(g_rxbuf, g_nrxcount, true);
-  }
-}
 
 int Liberty::device_reset(void)
 {

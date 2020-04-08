@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = LIBERTY_PRODUCT;
-	  device = new Liberty();
+	  device = new Liberty(LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
 	  fprintf(stderr, "Initialising liberty device.\n\n");
     device->endpoint_in = LIBERTY_ENDPOINT_IN;
     device->endpoint_out = LIBERTY_ENDPOINT_OUT;
@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = VIPER_PRODUCT;
-	  device = new Viper();
+	  device = new Viper(LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
     fprintf(stderr, "Initialising Viper device.\n\n");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;

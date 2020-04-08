@@ -16,21 +16,11 @@
 
 #define VALIDATE_CONTEXT(pctx, ctx) {pctx=(CVPcontext*)ctx;if (!(CVPcontext::findPctx(pctx))) return E_VPERR_INVALID_CONTEXT; }
 
-
-Viper::Viper(void) : Polhemus()
+Viper::Viper(uint8_t rx_buffer_size, uint8_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
 }
+
 Viper::~Viper(void) {}
-
-void Viper::device_clear_input(void)
-{
-  g_nrxcount = VIPER_RX_BUF_SIZE;
-
-  while(g_nrxcount > 0)
-  {
-    device_read(g_rxbuf, g_nrxcount, true);
-  }
-}
 
 int Viper::device_reset(void)
 {

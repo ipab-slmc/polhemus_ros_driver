@@ -18,6 +18,11 @@
 #define warn(as...)
 #endif
 
+Polhemus::Polhemus(uint8_t rx_buffer_size, uint8_t tx_buffer_size):
+  g_rxbuf(new uint8_t[rx_buffer_size]), g_txbuf(new uint8_t[tx_buffer_size])
+{
+}
+
 Polhemus::~Polhemus(void)
 {
 }
@@ -100,6 +105,16 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
   return retval;
 }
 
+void Polhemus::device_clear_input(void)
+{
+  g_nrxcount = rx_buffer_size;
+
+  while(g_nrxcount > 0)
+  {
+    device_read(g_rxbuf, g_nrxcount, true);
+  }
+}
+
 bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res)
 {
   printf("Calibration request...");
@@ -112,10 +127,6 @@ bool Polhemus::persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_
   printf("Making config persistent");
   res.success = persist_commands();
   return true;
-}
-
-void Polhemus::device_clear_input(void)
-{
 }
 
 int Polhemus::device_reset(void)
