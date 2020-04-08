@@ -47,7 +47,7 @@ Liberty::~Liberty(void) {}
 
 int Liberty::device_reset(void)
 {
-  unsigned char command[] = "\rp\r";
+  unsigned char command[] = "p";
   int size = sizeof(command)-1;
   int retval = device_send(command, size);
   device_clear_input();
