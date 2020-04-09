@@ -34,9 +34,10 @@
 #endif
 
 
-Liberty::Liberty(void) : Polhemus()
+Liberty::Liberty(std::string name) : Polhemus(name)
 {
 }
+
 Liberty::~Liberty(void) {}
 
 /** this resets previous `c' commands and puts the device in binary mode
@@ -199,53 +200,22 @@ int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float ar
   return 0;
 }
 
-int Liberty::send_saved_calibration(float x, float y, float z, int station_id)
+int Liberty::reset_boresight(void)
 {
-  int retval = 1;
+  unsigned char command[] = {control('b'), '*', '\r'};
+  int size = sizeof(command) - 1;
 
-  set_boresight(false, station_id, x, y, z);
-  retval = 0;
-
-  return retval;
+  device_send(command, size);
+  return 0;
 }
 
-bool Liberty::calibrate(void)
+tf2::Quaternion Liberty::get_quaternion(int station_id)
 {
-  for (int i = 0; i < station_count; ++i)
-  {
     tf2::Quaternion q(
-        stations[i].quaternion[1],
-        stations[i].quaternion[2],
-        stations[i].quaternion[3],
-        stations[i].quaternion[0]);
+        stations[station_id].quaternion[1],
+        stations[station_id].quaternion[2],
+        stations[station_id].quaternion[3],
+        stations[station_id].quaternion[0]);
 
-    double roll, pitch, yaw;
-    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-    // convert to degrees
-    roll = (roll * 180) / 3.14;
-    pitch = (pitch * 180) / 3.14;
-    yaw = (yaw * 180) / 3.14;
-
-    set_boresight(false, i, yaw, pitch, roll);
-
-    // save values to config file
-    std::string x_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/x";
-    std::string y_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/y";
-    std::string z_name = "/liberty_calibration/rotations/station_" + std::to_string(i) + "/z";
-
-    double x, y, z;
-
-    x = roll;
-    y = pitch;
-    z = yaw;
-
-    nh->setParam(x_name, roll);
-    nh->setParam(y_name, pitch);
-    nh->setParam(z_name, yaw);
-    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /liberty_calibration");
-
-  }
-  return true;
+    return q;
 }
-

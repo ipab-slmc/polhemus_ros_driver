@@ -301,7 +301,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = LIBERTY_PRODUCT;
-	  device = new Liberty();
+	  device = new Liberty(product_type);
 	  fprintf(stderr, "Initialising liberty device.\n\n");
   }
   else if (product_type == "viper")
@@ -314,7 +314,7 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = VIPER_PRODUCT;
-	  device = new Viper();
+	  device = new Viper(product_type);
     fprintf(stderr, "Initialising Viper device.\n\n");
   }
   else
@@ -355,6 +355,13 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  retval = device->reset_boresight();
+  if (retval)
+  {
+    fprintf(stderr, "Error resetting boresight.\n\n");
+    return 1;
+  }
+
   device->device_binary_mode(); // activate binary mode
 
   retval = device->request_num_of_stations();
@@ -376,42 +383,6 @@ int main(int argc, char** argv) {
 
      if this is changed, the station_t struct or (***) below has to be edited accordingly 
   */
-
-  // send the calibration saved in calibration.yaml
-  // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
-  for (i=0; i < nstations; i++)
-  {
-    if (nh.hasParam("/" + product_type + "_calibration/rotations/station_" + std::to_string(i)))
-    {
-      std::string x_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/x";
-      std::string y_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/y";
-      std::string z_name = "/" + product_type + "_calibration/rotations/station_" + std::to_string(i) + "/z";
-      float x;
-      float y;
-      float z;
-      // read x y and z rotations from param server
-      nh.getParam(x_name, x);
-      nh.getParam(y_name, y);
-      nh.getParam(z_name, z);
-      if (x == 0 & y == 0 & z == 0)
-      {
-        // no previous calibration exists
-        fprintf(stderr, "Sensors have not been calibrated, please calibrate before proceeding!!!\n\n");
-        break;
-      }
-      else
-      {
-        fprintf(stderr, "Calibrating station %d.\n", i);
-        device->send_saved_calibration(x, y, z, i);
-      }
-    }
-    else
-    {
-      // no previous calibration exists
-      fprintf(stderr, "Station could not be found in calibration, please calibrate before proceeding!!!\n\n");
-      break;
-    }
-  }
 
   retval = device->define_data_type(DATA_TYPE_QUAT);
   printf("Setting data type to quaternion\n");
@@ -458,6 +429,12 @@ int main(int argc, char** argv) {
   {
     fprintf(stderr, "Error setting data mode to continuous.\n\n");
     return 1;
+  }
+
+  retval = device->send_saved_calibration();
+  if (retval)
+  {
+    fprintf(stderr, "Calibration not loaded.\n\n");
   }
 
   gettimeofday(&tv, NULL);

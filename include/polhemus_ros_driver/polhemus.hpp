@@ -46,6 +46,7 @@ typedef enum data_type_e {
 class Polhemus
 {
 public:
+  Polhemus(std::string name);
   virtual ~Polhemus(void);
   int count_bits(uint16_t v);
   ros::NodeHandle *nh;
@@ -69,11 +70,13 @@ public:
   virtual int set_hemisphere(int x, int y, int z);
   virtual int request_num_of_stations(void);
   virtual int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
+  virtual int reset_boresight(void);
+  virtual tf2::Quaternion get_quaternion(int station_id);
   virtual int set_source(int source);
-  virtual int send_saved_calibration(float x, float y, float z, int station_id);
+  int send_saved_calibration(void);
   bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
   bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
-  virtual bool calibrate(void);
+  bool calibrate(void);
   virtual bool persist_commands(void);
   libusb_device_handle *device_handle;
   int station_count;
@@ -84,5 +87,6 @@ public:
   uint8_t g_txbuf[TX_BUF_SIZE];
   uint8_t g_rxbuf[RX_BUF_SIZE];
   std::vector<std::string> station_names_;
+  std::string name;
 };
 #endif

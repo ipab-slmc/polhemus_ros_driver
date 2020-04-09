@@ -34,7 +34,7 @@
 
 class Liberty : public Polhemus {
 public:
-  Liberty(void);
+  Liberty(std::string name);
 	~Liberty(void);
 	int request_num_of_stations(void);
 	int device_reset(void);
@@ -46,8 +46,9 @@ public:
 	int define_data_type(data_type_e data_type);
 	int set_hemisphere(int x, int y, int z);
 	int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
-	int send_saved_calibration(float x, float y, float z, int station_id);
-	bool calibrate(void);
+	int reset_boresight(void);
+	tf2::Quaternion get_quaternion(int station_id);
+	int send_saved_calibration(void);
 private:
 	liberty_pno_frame_t *stations;
 

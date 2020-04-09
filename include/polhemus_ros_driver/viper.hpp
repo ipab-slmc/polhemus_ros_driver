@@ -16,7 +16,7 @@
 class Viper: public Polhemus
 {
 public:
-  Viper(void);
+  Viper(std::string name);
   ~Viper(void);
   int request_num_of_stations(void);
   int device_reset(void);
@@ -33,9 +33,10 @@ private:
   void prepare_frame(uint8_t buffer[], int &txbytes);
   int receive_data_frame(viper_cmds_e cmd_type);
   int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
+  int reset_boresight(void);
+  tf2::Quaternion get_quaternion(int station_id);
   int set_source(int source);
-  int send_saved_calibration(float x, float y, float z, int station_id);
-  bool calibrate(void);
+  int send_saved_calibration(void);
   bool persist_commands(void);
   CVPSeuPno pno;
   uint32_t sensor_map;
