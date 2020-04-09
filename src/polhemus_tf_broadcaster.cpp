@@ -385,6 +385,8 @@ int main(int argc, char** argv) {
 
   go_on = 1;
 
+  device->calibrate();
+
   printf("Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
@@ -400,7 +402,7 @@ int main(int argc, char** argv) {
   geometry_msgs::TransformStamped transformStamped;
   ros::Rate rate(240);
 
-  // Start main loop
+   // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
       break;

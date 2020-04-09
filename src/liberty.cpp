@@ -162,6 +162,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
 
 bool Liberty::calibrate(void)
 {
+  printf("Calibrating sensors..\n");
   unsigned char command[] = "b*,0,0,0,0\r";
   int size = sizeof(command)-1;
   device_send(command, size);
