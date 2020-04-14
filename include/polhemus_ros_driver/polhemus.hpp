@@ -28,6 +28,7 @@
 #define RX_BUF_SIZE  0x400
 #define VPUSB_WRITE_TIMEOUT_MS 50
 #define VPUSB_READ_TIMEOUT_MS 300
+#define PI 3.14159265359
 
 /* make control character out of ordinary character */
 #define control(c) ((c) & 0x1f)

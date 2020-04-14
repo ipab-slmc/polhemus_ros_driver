@@ -123,59 +123,70 @@ int Polhemus::send_saved_calibration(void)
 
   device_reset();
 
-  if (name == "viper")
-  {
-    retval = define_data_type(DATA_TYPE_EULER);
-  }
-  else
-  {
-    retval = 0;
-  }
+  reset_boresight();
 
-  if (!retval)
+  // send the calibration saved in calibration.yaml
+  // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
+  for (int i = 0; i < station_count; ++i)
   {
-    // send the calibration saved in calibration.yaml
-    // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
-    for (int i = 0; i < station_count; ++i)
+    if (nh->hasParam("/calibration/viper_calibration/rotations/station_" + std::to_string(i)))
     {
-      tf2::Quaternion q = get_quaternion(i);
-      double roll, pitch, yaw;
-      tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+      std::string x_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/x";
+      std::string y_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/y";
+      std::string z_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/z";
+      float x;
+      float y;
+      float z;
 
-      roll = (roll * 180) / 3.14;
-      pitch = (pitch * 180) / 3.14;
-      yaw = (yaw * 180) / 3.14;
+      // read x y and z rotations from param server
+      nh->getParam(x_name, x);
+      nh->getParam(y_name, y);
+      nh->getParam(z_name, z);
 
-      if (nh->hasParam("/calibration/viper_calibration/rotations/station_" + std::to_string(i)))
+      if (x == 0 & y == 0 & z == 0)
       {
-        std::string x_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/x";
-        std::string y_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/y";
-        std::string z_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/z";
-        float x;
-        float y;
-        float z;
+        // no previous calibration exists
+        fprintf(stderr, "No previous calibration data available, please calibrate before proceeding!!!\n\n");
+        break;
+      }
+      else
+      {
+        fprintf(stderr, "Calibrating station %d.\n", i);
 
-        // read x y and z rotations from param server
-        nh->getParam(x_name, x);
-        nh->getParam(y_name, y);
-        nh->getParam(z_name, z);
-
-        if (x == 0 & y == 0 & z == 0)
+        if (name == "viper")
         {
-          // no previous calibration exists
-          fprintf(stderr, "No previous calibration data available, please calibrate before proceeding!!!\n\n");
-          break;
+          retval = define_data_type(DATA_TYPE_EULER);
         }
         else
         {
-          fprintf(stderr, "Calibrating station %d.\n", i);
+          retval = 0;
+        }
+        if (!retval)
+        {
+          tf2::Quaternion q = get_quaternion(i);
+          double roll, pitch, yaw;
+          tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+          fprintf(stderr, "quat x: %f\n", q[0]);
+          fprintf(stderr, "quat y: %f\n", q[1]);
+          fprintf(stderr, "quat z: %f\n", q[2]);
+          fprintf(stderr, "quat w: %f\n", q[3]);
+
+          fprintf(stderr, "roll %f.\n", roll);
+          fprintf(stderr, "pitch %f.\n", pitch);
+          fprintf(stderr, "yaw %f.\n", yaw);
+
+          roll = (roll * 180) / PI;
+          pitch = (pitch * 180) / PI;
+          yaw = (yaw * 180) / PI;
+
+          fprintf(stderr, "roll %f.\n", roll);
+          fprintf(stderr, "pitch %f.\n", pitch);
+          fprintf(stderr, "yaw %f.\n", yaw);
 
           x = roll - x;
           y = pitch - y;
           z = yaw - z;
-          fprintf(stderr, "roll %f.\n", roll);
-          fprintf(stderr, "pitch %f.\n", pitch);
-          fprintf(stderr, "yaw %f.\n", yaw);
 
           fprintf(stderr, "x %f.\n", x);
           fprintf(stderr, "y %f.\n", y);
@@ -189,12 +200,12 @@ int Polhemus::send_saved_calibration(void)
           }
         }
       }
-      else
-      {
-        // no previous calibration exists
-        fprintf(stderr, "Station could not be found in calibration, please calibrate before proceeding!!!\n\n");
-        break;
-      }
+    }
+    else
+    {
+      // no previous calibration exists
+      fprintf(stderr, "Station could not be found in calibration, please calibrate before proceeding!!!\n\n");
+      break;
     }
   }
   define_data_type(DATA_TYPE_QUAT);
@@ -204,11 +215,10 @@ int Polhemus::send_saved_calibration(void)
 bool Polhemus::calibrate(void)
 {
   int retval = 1;
+
   if (name == "viper")
   {
-    fprintf(stderr, "here 1\n");
     device_data_mode(DATA_RESET);
-    retval = define_data_type(DATA_TYPE_EULER);
   }
   else
   {
@@ -218,61 +228,69 @@ bool Polhemus::calibrate(void)
   // turn off continuous data mode first
 
   device_clear_input();
+  reset_boresight();
 
-  if (!retval)
+  define_data_type(DATA_TYPE_EULER);
+
+  for (int i = 0; i < station_count; ++i)
   {
-    for (int i = 0; i < station_count; ++i)
+    tf2::Quaternion q = get_quaternion(i);
+
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
+
+    fprintf(stderr, "quat x: %f\n", q[0]);
+    fprintf(stderr, "quat y: %f\n", q[1]);
+    fprintf(stderr, "quat z: %f\n", q[2]);
+    fprintf(stderr, "quat w: %f\n", q[3]);
+
+    // convert to degrees
+    roll = (roll * 180) / 3.14;
+    pitch = (pitch * 180) / 3.14;
+    yaw = (yaw * 180) / 3.14;
+
+    fprintf(stderr, "roll: %f\n", roll);
+    fprintf(stderr, "pitch: %f\n", pitch);
+    fprintf(stderr, "yaw: %f\n", yaw);
+
+    fprintf(stderr, "Calibrating station %d.\n", i);
+
+    // save values to config file
+    std::string x_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/x";
+    std::string y_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/y";
+    std::string z_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/z";
+
+    nh->setParam(x_name, roll);
+    nh->setParam(y_name, pitch);
+    nh->setParam(z_name, yaw);
+
+    if (name == "viper")
     {
-      fprintf(stderr, "here 2\n");
-      tf2::Quaternion q = get_quaternion(i);
-      fprintf(stderr, "here 3\n");
-      double roll, pitch, yaw;
-      tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
-
-      fprintf(stderr, "quat x: %f\n", q[1]);
-      fprintf(stderr, "quat y: %f\n", q[2]);
-      fprintf(stderr, "quat z: %f\n", q[3]);
-      fprintf(stderr, "quat w: %f\n", q[0]);
-
-      // convert to degrees
-      roll = (roll * 180) / 3.14;
-      pitch = (pitch * 180) / 3.14;
-      yaw = (yaw * 180) / 3.14;
-
-      fprintf(stderr, "roll: %f\n", roll);
-      fprintf(stderr, "pitch: %f\n", pitch);
-      fprintf(stderr, "yaw: %f\n", yaw);
-
-      fprintf(stderr, "Calibrating station %d.\n", i);
-
-      // save values to config file
-      std::string x_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/x";
-      std::string y_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/y";
-      std::string z_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/z";
-
-      nh->setParam(x_name, roll);
-      nh->setParam(y_name, pitch);
-      nh->setParam(z_name, yaw);
-
-      if (name == "viper")
-      {
-        system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /calibration");
-      }
-      else
-      {
-        system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /calibration");
-      }
+      system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /calibration");
     }
-
-    retval = set_boresight(false, -1, 0, 0, 0);
-    if (retval)
+    else
     {
-      fprintf(stderr, "Calibration failed.\n");
+      system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /calibration");
     }
+  }
 
-    // set data mode back to continuous
-    define_data_type(DATA_TYPE_QUAT);
-    device_data_mode(DATA_CONTINUOUS);
+  retval = set_boresight(false, -1, 0, 0, 0);
+  if (retval)
+  {
+    fprintf(stderr, "Calibration failed.\n");
+  }
+
+  // set data mode back to continuous
+  retval = define_data_type(DATA_TYPE_QUAT);
+  if (retval)
+  {
+    fprintf(stderr, "quat failed.\n");
+  }
+
+  retval = device_data_mode(DATA_CONTINUOUS);
+  if (retval)
+  {
+    fprintf(stderr, "continuous failed.\n");
   }
 
   return true;

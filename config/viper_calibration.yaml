@@ -1,3 +1,3 @@
 viper_calibration:
   rotations:
-    station_0: {x: -139.0501494063305, y: 3.6995779558266078, z: -24.097652412070627}
+    station_0: {x: 0, y: 0, z: 0}
