@@ -68,7 +68,6 @@ void Liberty::generate_data_structure(void)
 
 int Liberty::device_data_mode(data_mode_e mode)
 {
-
   int size;
   int retval;
   switch (mode)
@@ -82,7 +81,7 @@ int Liberty::device_data_mode(data_mode_e mode)
     }
     case DATA_SINGLE:
     {
-      unsigned char command[] = "p\r";
+      unsigned char command[] = "p";
       size = sizeof(command)-1;
       device_send(command, size);
       return 0;
@@ -94,16 +93,15 @@ int Liberty::device_data_mode(data_mode_e mode)
 
 int Liberty::receive_pno_data_frame(void)
 {
-  int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
-  retval = device_read(stations, g_nrxcount, true);
-  if (stations->head.init_cmd == 67)
+  device_read(stations, g_nrxcount, true);
+  if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
   {
     return station_count;
   }
   else
   {
-    return retval;
+    return 0;
   }
 }
 
@@ -140,7 +138,7 @@ int Liberty::request_num_of_stations(void)
   device_send(command, size);
   device_read(&resp, size_reply, true);
 
-  if (resp.head.init_cmd == 21) {
+  if (resp.head.init_cmd == LIBERTY_ACTIVE_STATION_STATE_CMD) {
     station_count = count_bits(resp.detected & resp.active);
     return 0;
   }
