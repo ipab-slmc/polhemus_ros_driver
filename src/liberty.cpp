@@ -34,7 +34,7 @@
 #endif
 
 
-Liberty::Liberty(std::string name) : Polhemus(name)
+Liberty::Liberty(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(name, rx_buffer_size, tx_buffer_size)
 {
 }
 
@@ -45,14 +45,16 @@ Liberty::~Liberty(void) {}
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
+
 int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
   unsigned char command[] = "\rp\r";
   int size = sizeof(command) - 1;
-  device_send(command, size);
+  int retval = device_send(command, size);
   // remove everything from input
   device_clear_input();
+  return retval;
 }
 
 void Liberty::device_binary_mode(void)
@@ -69,13 +71,13 @@ void Liberty::generate_data_structure(void)
 
 int Liberty::device_data_mode(data_mode_e mode)
 {
-
   int size;
+  int retval;
   switch (mode)
   {
     case DATA_CONTINUOUS:
     {
-      unsigned char command[] = "c\r";
+      unsigned char command[] = "c\rc\r";
       size = sizeof(command) - 1;
       device_send(command, size);
       return 0;
@@ -96,14 +98,19 @@ int Liberty::receive_pno_data_frame(void)
 {
   int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
-  retval = device_read(stations, g_nrxcount, true);
-  if (retval)
+  device_read(stations, g_nrxcount, true);
+  if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
+  {
+    // update this as a sensor may have been dropped
+    station_count = g_nrxcount / sizeof(liberty_pno_frame_t);
+    retval = station_count;
+  }
+  else
   {
     fprintf(stderr, "PNO receive failed.\n");
+    retval = 0;
   }
-  // update this as a sensor may have been dropped
-  station_count = g_nrxcount / sizeof(liberty_pno_frame_t);
-  retval = station_count;
+  return retval;
 }
 
 int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
@@ -126,6 +133,7 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 
 int Liberty::define_data_type(data_type_e data_type)
 {
+  int retval = 0;
   unsigned char command[1];
 
   if (data_type == DATA_TYPE_QUAT)
@@ -144,31 +152,27 @@ int Liberty::define_data_type(data_type_e data_type)
 
   int size = sizeof(command) - 1;
 
-  device_send(command, size);
-  return 0;
+  retval = device_send(command, size);
+  return retval;
 }
 
 int Liberty::request_num_of_stations(void)
 {
-  int retval = 0;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
   int size = sizeof(command) - 1;
   int size_reply = sizeof(resp);
   device_send(command, size);
-  retval = device_read(&resp, size_reply, true);
-  fprintf(stderr, "Request num of station: init_cmd: %d, station: %d, error: %d, size: %d, active: %d, detected: %d\n", resp.head.init_cmd, resp.head.station, resp.head.error, resp.head.size, resp.active, resp.detected);
 
-  g_nrxcount = RX_BUF_SIZE;
+  device_read(&resp, size_reply, true);
 
-  if (resp.head.init_cmd == 21) {
+  if (resp.head.init_cmd == LIBERTY_ACTIVE_STATION_STATE_CMD)
+  {
     station_count = count_bits(resp.detected & resp.active);
     return 0;
   }
   else
   {
-    fprintf(stderr, "Station cfg request failed, command returned: %d %d %d \n", resp.head.init_cmd,
-        resp.head.station, resp.head.error);
     return 1;
   }
 }
@@ -176,11 +180,12 @@ int Liberty::request_num_of_stations(void)
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Liberty::set_hemisphere(int x, int y, int z)
 {
+  int retval = 0;
   unsigned char command[6];
   int size = sizeof(command) - 1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
-  device_send(command, size);
-  return true;
+  retval = device_send(command, size);
+  return retval;
 }
 
 int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)

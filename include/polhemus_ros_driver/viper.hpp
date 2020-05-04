@@ -12,11 +12,13 @@
 
 #define VIPER_ENDPOINT_IN 0x81
 #define VIPER_ENDPOINT_OUT 0x02
+#define VIPER_TX_BUF_SIZE  0x400
+#define VIPER_RX_BUF_SIZE  0x400
 
 class Viper: public Polhemus
 {
 public:
-  Viper(std::string name);
+  Viper(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size);
   ~Viper(void);
   int request_num_of_stations(void);
   int device_reset(void);

@@ -18,8 +18,9 @@
 #define warn(as...)
 #endif
 
-Polhemus::Polhemus(std::string name):
-  name(name)
+
+Polhemus::Polhemus(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size):
+  name(name), g_rxbuf(new uint8_t[rx_buffer_size]), g_txbuf(new uint8_t[tx_buffer_size])
 {
 }
 
@@ -52,7 +53,7 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
     retval = 1;
     fprintf(stderr, "write count wrong.\n\n");
   }
-  else if ((nActual % MAX_PACKET_SIZE) == 0)
+  else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
     fprintf(stderr, "Device write, size larger than max packet size.\n\n");
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
@@ -107,7 +108,7 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 
 void Polhemus::device_clear_input(void)
 {
-  g_nrxcount = RX_BUF_SIZE;
+  g_nrxcount = rx_buffer_size;
 
   while(g_nrxcount > 0)
   {

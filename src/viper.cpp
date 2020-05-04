@@ -17,7 +17,7 @@
 #define VALIDATE_CONTEXT(pctx, ctx) {pctx=(CVPcontext*)ctx;if (!(CVPcontext::findPctx(pctx))) return E_VPERR_INVALID_CONTEXT; }
 
 
-Viper::Viper(std::string name) : Polhemus(name)
+Viper::Viper(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(name, rx_buffer_size, tx_buffer_size)
 {
 }
 
@@ -71,7 +71,7 @@ int Viper::device_data_mode(data_mode_e mode)
 int Viper::receive_data_frame(viper_cmds_e cmd_type)
 {
   int retval = 0;
-  g_nrxcount = RX_BUF_SIZE;
+  g_nrxcount = VIPER_RX_BUF_SIZE;
   retval = device_read(g_rxbuf, g_nrxcount, true);
 
   if (retval == 0)
@@ -91,7 +91,7 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
 int Viper::receive_pno_data_frame(void)
 {
   int retval = 0;
-  g_nrxcount = RX_BUF_SIZE;
+  g_nrxcount = VIPER_RX_BUF_SIZE;
   retval = device_read(g_rxbuf, g_nrxcount, true);
   if (retval == 0)
   {
@@ -195,7 +195,7 @@ int Viper::request_num_of_stations(void)
   }
   else
   {
-    g_nrxcount = RX_BUF_SIZE;
+    g_nrxcount = VIPER_RX_BUF_SIZE;
     retval = device_read(g_rxbuf, g_nrxcount, true);
 
     if (retval == 0)
