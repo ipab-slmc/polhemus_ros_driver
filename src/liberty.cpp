@@ -49,7 +49,7 @@ Liberty::~Liberty(void) {}
 int Liberty::device_reset(void)
 {
   // reset c, this may produce "invalid command" answers
-  unsigned char command[] = "\rp\r";
+  unsigned char command[] = "p";
   int size = sizeof(command) - 1;
   int retval = device_send(command, size);
   // remove everything from input
@@ -207,11 +207,12 @@ int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float ar
 
 int Liberty::reset_boresight(void)
 {
-  unsigned char command[] = {control('b'), '*', '\r'};
+  int retval = 0;
+  unsigned char command[] = {control('b'), '*', '\r', '\0' };
   int size = sizeof(command) - 1;
 
-  device_send(command, size);
-  return 0;
+  retval = device_send(command, size);
+  return retval;
 }
 
 tf2::Quaternion Liberty::get_quaternion(int station_id)

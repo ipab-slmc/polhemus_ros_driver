@@ -119,22 +119,29 @@ void Polhemus::device_clear_input(void)
 int Polhemus::send_saved_calibration(void)
 {
   int retval = 1;
+  if (nh->hasParam("/calibration/" + name + "_calibration/rotations"))
+  {
+    retval = receive_pno_data_frame();
 
-  retval = receive_pno_data_frame();
+    device_reset();
 
-  device_reset();
-
-  reset_boresight();
+    reset_boresight();
+  }
+  else
+  {
+    fprintf(stderr, "No previous calibration data available, please calibrate before proceeding!!!\n\n");
+    return 0;
+  }
 
   // send the calibration saved in calibration.yaml
   // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
   for (int i = 0; i < station_count; ++i)
   {
-    if (nh->hasParam("/calibration/viper_calibration/rotations/station_" + std::to_string(i)))
+    if (nh->hasParam("/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i)))
     {
-      std::string x_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/x";
-      std::string y_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/y";
-      std::string z_name = "/calibration/viper_calibration/rotations/station_" + std::to_string(i) + "/z";
+      std::string x_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/x";
+      std::string y_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/y";
+      std::string z_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/z";
       float x;
       float y;
       float z;

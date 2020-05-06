@@ -55,9 +55,6 @@
 #define LIBERTY_PRODUCT 0xff20
 #define VIPER_PRODUCT 0xbf01
 
-#define LIBERTY_ENDPOINT_IN 0x88
-#define LIBERTY_ENDPOINT_OUT 0x4
-
 
 typedef struct _vp_usbdevinfo {
   int usbDevIndex;
@@ -398,8 +395,6 @@ int main(int argc, char** argv) {
   signal(SIGINT, signal_handler);
 
   go_on = 1;
-
-  device->calibrate();
 
   printf("Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
