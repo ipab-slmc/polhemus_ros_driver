@@ -6,6 +6,7 @@
 #ifndef POLHEMUS_H
 #define POLHEMUS_H
 
+#include <ros/console.h>
 #include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <string>

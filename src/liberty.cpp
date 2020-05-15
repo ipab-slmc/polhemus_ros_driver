@@ -101,6 +101,7 @@ int Liberty::receive_pno_data_frame(void)
   }
   else
   {
+    ROS_ERROR_STREAM("Continuous cmd not received. Cmd is: " << stations->head.init_cmd);
     return 0;
   }
 }

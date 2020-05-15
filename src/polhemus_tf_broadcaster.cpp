@@ -434,6 +434,10 @@ int main(int argc, char** argv) {
         }
       }
     }
+    else
+    {
+      ROS_WARN("Sensor 0, could not get sensor data");
+    }
     
     ros::spinOnce();
     rate.sleep();
