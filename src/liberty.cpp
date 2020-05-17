@@ -134,23 +134,26 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 int Liberty::define_data_type(data_type_e data_type)
 {
   int retval = 0;
-  unsigned char command[1];
+  //unsigned char command[15];
+  unsigned char* command;
+  int size = 0;
 
   if (data_type == DATA_TYPE_QUAT)
   {
-    unsigned char command[15] = "O*,8,9,11,3,7\r";  // quaternions
-
+    unsigned char c[]  = "O*,8,9,11,3,7\r";  // quaternions
+    command = c;
+    size = sizeof(c) - 1;
   }
   else if (data_type == DATA_TYPE_EULER)
   {
-    unsigned char command[15] = "O*,8,9,11,3,5\r";  // euler
+    unsigned char c[] = "O*,8,9,11,3,5\r";  // euler
+    command = c;
+    size = sizeof(c) - 1;
   }
   else
   {
     return 1;
   }
-
-  int size = sizeof(command) - 1;
 
   retval = device_send(command, size);
   return retval;

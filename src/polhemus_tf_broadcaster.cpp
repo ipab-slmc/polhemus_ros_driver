@@ -364,9 +364,9 @@ int main(int argc, char** argv) {
   }
 
   // define quaternion data type
+  printf("[POLHEMUS] Setting data type to quaternion\n");
   retval = device->define_data_type(DATA_TYPE_QUAT);
 
-  printf("Setting data type to quaternion\n");
   if (retval)
   {
     fprintf(stderr, "[POHEMUS] Error setting data type.\n\n");
@@ -375,13 +375,13 @@ int main(int argc, char** argv) {
 
   // Calibration service
   ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
-  printf("Service ready to calibrate the sensors.\n");
+  printf("[POLHEMUS] Service ready to calibrate the sensors.\n");
 
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
 
-  printf("Setting the output hemisphere\n");
+  printf("[POLHEMUS] Setting the output hemisphere\n");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
   if (retval)
   {
@@ -396,22 +396,22 @@ int main(int argc, char** argv) {
 
   go_on = 1;
 
-  printf("Enabling continuous data mode...\n");
+  printf("[POLHEMUS] Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
     fprintf(stderr, "[POHEMUS] Error setting data mode to continuous.\n\n");
     return 1;
   }
-
-  retval = device->send_saved_calibration();
-  if (retval)
-  {
-    fprintf(stderr, "[POHEMUS] Calibration not loaded.\n\n");
-  }
+//
+//  retval = device->send_saved_calibration();
+//  if (retval)
+//  {
+//    fprintf(stderr, "[POHEMUS] Calibration not loaded.\n\n");
+//  }
 
   gettimeofday(&tv, NULL);
-  printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
+  printf("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;

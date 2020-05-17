@@ -56,6 +56,9 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
     fprintf(stderr, "[POHEMUS] Device write, size larger than max packet size.\n\n");
+    fprintf(stderr, "[POHEMUS] nactual %d.\n\n", nActual);
+    fprintf(stderr, "[POHEMUS] size %d.\n\n", size);
+    fprintf(stderr, "[POHEMUS] max packet size %d.\n", endpoint_out_max_packet_size);
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
   return retval;
