@@ -96,7 +96,7 @@ int Liberty::device_data_mode(data_mode_e mode)
 
 int Liberty::receive_pno_data_frame(void)
 {
-  int retval = 0;
+  int retval = -1;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
   device_read(stations, g_nrxcount, true);
   if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
@@ -107,8 +107,7 @@ int Liberty::receive_pno_data_frame(void)
   }
   else
   {
-    fprintf(stderr, "[POHEMUS] PNO receive failed.\n");
-    retval = 0;
+    fprintf(stderr, "[POLHEMUS] PNO receive failed.\n");
   }
   return retval;
 }

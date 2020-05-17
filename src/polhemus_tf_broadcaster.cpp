@@ -85,7 +85,7 @@ static void signal_handler(int s) {
 static void print_hex(FILE *stream, const char *buf, size_t size) {
   const char *c;
   for (c = buf; c != buf + size; ++c)
-    fprintf(stream, "[POHEMUS] %02x:%c ", (unsigned char) *c, isprint(*c) ? *c : '.');
+    fprintf(stream, "[POLHEMUS] %02x:%c ", (unsigned char) *c, isprint(*c) ? *c : '.');
   fprintf(stream, "\n");
 }
 
@@ -302,7 +302,7 @@ int main(int argc, char** argv) {
     }
 
 	  device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
-	  fprintf(stderr, "[POHEMUS] Initialising liberty device.\n\n");
+	  fprintf(stderr, "[POLHEMUS] Initialising liberty device.\n\n");
     device->endpoint_in = LIBERTY_ENDPOINT_IN;
     device->endpoint_out = LIBERTY_ENDPOINT_OUT;
   }
@@ -313,19 +313,19 @@ int main(int argc, char** argv) {
     if (retval)
     {
       //error connecting
-      fprintf(stderr, "[POHEMUS] Error connecting to device.\n\n");
+      fprintf(stderr, "[POLHEMUS] Error connecting to device.\n\n");
       return 1;
     }
 
 	  device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
 
-    fprintf(stderr, "[POHEMUS] Initialising Viper device.\n\n");
+    fprintf(stderr, "[POLHEMUS] Initialising Viper device.\n\n");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;
   }
   else
   {
-	  fprintf(stderr, "[POHEMUS] Could not find a valid Polhemus device type on parameter server.\n");
+	  fprintf(stderr, "[POLHEMUS] Could not find a valid Polhemus device type on parameter server.\n");
 	  abort();
   }
 
@@ -338,14 +338,14 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error resetting device.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error resetting device.\n\n");
     return 1;
   }
 
   retval = device->reset_boresight();
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error resetting boresight.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error resetting boresight.\n\n");
     return 1;
   }
 
@@ -354,12 +354,12 @@ int main(int argc, char** argv) {
   retval = device->request_num_of_stations();
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error reading number of stations.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error reading number of stations.\n\n");
     return 1;
   }
   else
   {
-    fprintf(stderr, "[POHEMUS] Found %d stations.\n\n", device->station_count);
+    fprintf(stderr, "[POLHEMUS] Found %d stations.\n\n", device->station_count);
     nstations = device->station_count;
   }
 
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
 
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error setting data type.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error setting data type.\n\n");
     return 1;
   }
 
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error setting hemisphere.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error setting hemisphere.\n\n");
     return 1;
   }
 
@@ -400,15 +400,15 @@ int main(int argc, char** argv) {
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error setting data mode to continuous.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error setting data mode to continuous.\n\n");
     return 1;
   }
-//
-//  retval = device->send_saved_calibration();
-//  if (retval)
-//  {
-//    fprintf(stderr, "[POHEMUS] Calibration not loaded.\n\n");
-//  }
+
+  retval = device->send_saved_calibration();
+  if (retval)
+  {
+    fprintf(stderr, "[POLHEMUS] Calibration not loaded.\n\n");
+  }
 
   gettimeofday(&tv, NULL);
   printf("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
@@ -417,6 +417,8 @@ int main(int argc, char** argv) {
   geometry_msgs::TransformStamped transformStamped;
   ros::Rate rate(240);
 
+  int flag = 0;
+
    // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
@@ -424,8 +426,34 @@ int main(int argc, char** argv) {
 
     // Update polhemus
     int sensor_count = device->receive_pno_data_frame();
-    if (sensor_count > 0)
+
+    if (sensor_count == -1)
     {
+      if (flag == 0 || flag == 2)
+      {
+        fprintf(stderr, "[POLHEMUS] No position and orientation data received from Polhemus system!!!\n");
+        retval = device->device_reset();
+        retval = device->device_data_mode(DATA_CONTINUOUS);
+        flag = 1;
+      }
+    }
+    else if (sensor_count == 0)
+    {
+      if (flag < 2)
+      {
+        fprintf(stderr, "[POLHEMUS] Polhemus system is reporting 0 sensors.\n");
+        retval = device->device_reset();
+        retval = device->device_data_mode(DATA_CONTINUOUS);
+        flag = 2;
+      }
+    }
+    else
+    {
+      if (flag >= 1)
+      {
+        fprintf(stderr, "[POLHEMUS] Position and orientation data now received from Polhemus system!!!\n");
+        flag = 0;
+      }
       /* Note: timestamp is the time in ms after the first read to the
          system after turning it on
          at 240Hz, the time between data sample is 1/240 = .00416_
@@ -449,10 +477,7 @@ int main(int argc, char** argv) {
         }
       }
     }
-    else
-    {
-      fprintf(stderr, "[POHEMUS] No position and orientation data received from Polhemus system!!!\n");
-    }
+
     ros::spinOnce();
     rate.sleep();
   }
@@ -460,7 +485,7 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "[POHEMUS] Error resetting device.\n\n");
+    fprintf(stderr, "[POLHEMUS] Error resetting device.\n\n");
     return 1;
   }
   // // Shutdown
