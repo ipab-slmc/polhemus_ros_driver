@@ -85,7 +85,7 @@ static void signal_handler(int s) {
 static void print_hex(FILE *stream, const char *buf, size_t size) {
   const char *c;
   for (c = buf; c != buf + size; ++c)
-    fprintf(stream, "%02x:%c ", (unsigned char) *c, isprint(*c) ? *c : '.');
+    fprintf(stream, "[POHEMUS] %02x:%c ", (unsigned char) *c, isprint(*c) ? *c : '.');
   fprintf(stream, "\n");
 }
 
@@ -297,12 +297,12 @@ int main(int argc, char** argv) {
     if (retval)
     {
       //error connecting
-      fprintf(stderr, "Error connecting to device.\n\n");
+      fprintf(stderr, "[POLHEMUS] Error connecting to device.\n\n");
       return 1;
     }
 
 	  device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
-	  fprintf(stderr, "Initialising liberty device.\n\n");
+	  fprintf(stderr, "[POHEMUS] Initialising liberty device.\n\n");
     device->endpoint_in = LIBERTY_ENDPOINT_IN;
     device->endpoint_out = LIBERTY_ENDPOINT_OUT;
   }
@@ -313,19 +313,19 @@ int main(int argc, char** argv) {
     if (retval)
     {
       //error connecting
-      fprintf(stderr, "Error connecting to device.\n\n");
+      fprintf(stderr, "[POHEMUS] Error connecting to device.\n\n");
       return 1;
     }
 
 	  device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
 
-    fprintf(stderr, "Initialising Viper device.\n\n");
+    fprintf(stderr, "[POHEMUS] Initialising Viper device.\n\n");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;
   }
   else
   {
-	  fprintf(stderr, "Could not find a valid Polhemus device type on parameter server.\n");
+	  fprintf(stderr, "[POHEMUS] Could not find a valid Polhemus device type on parameter server.\n");
 	  abort();
   }
 
@@ -338,14 +338,14 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "Error resetting device.\n\n");
+    fprintf(stderr, "[POHEMUS] Error resetting device.\n\n");
     return 1;
   }
 
   retval = device->reset_boresight();
   if (retval)
   {
-    fprintf(stderr, "Error resetting boresight.\n\n");
+    fprintf(stderr, "[POHEMUS] Error resetting boresight.\n\n");
     return 1;
   }
 
@@ -354,12 +354,12 @@ int main(int argc, char** argv) {
   retval = device->request_num_of_stations();
   if (retval)
   {
-    fprintf(stderr, "Error reading number of stations.\n\n");
+    fprintf(stderr, "[POHEMUS] Error reading number of stations.\n\n");
     return 1;
   }
   else
   {
-    fprintf(stderr, "Found %d stations.\n\n", device->station_count);
+    fprintf(stderr, "[POHEMUS] Found %d stations.\n\n", device->station_count);
     nstations = device->station_count;
   }
 
@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
   printf("Setting data type to quaternion\n");
   if (retval)
   {
-    fprintf(stderr, "Error setting data type.\n\n");
+    fprintf(stderr, "[POHEMUS] Error setting data type.\n\n");
     return 1;
   }
 
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
   if (retval)
   {
-    fprintf(stderr, "Error setting hemisphere.\n\n");
+    fprintf(stderr, "[POHEMUS] Error setting hemisphere.\n\n");
     return 1;
   }
 
@@ -400,14 +400,14 @@ int main(int argc, char** argv) {
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
-    fprintf(stderr, "Error setting data mode to continuous.\n\n");
+    fprintf(stderr, "[POHEMUS] Error setting data mode to continuous.\n\n");
     return 1;
   }
 
   retval = device->send_saved_calibration();
   if (retval)
   {
-    fprintf(stderr, "Calibration not loaded.\n\n");
+    fprintf(stderr, "[POHEMUS] Calibration not loaded.\n\n");
   }
 
   gettimeofday(&tv, NULL);
@@ -449,7 +449,10 @@ int main(int argc, char** argv) {
         }
       }
     }
-    
+    else
+    {
+      fprintf(stderr, "[POHEMUS] No position and orientation data received from Polhemus system!!!\n");
+    }
     ros::spinOnce();
     rate.sleep();
   }
@@ -457,7 +460,7 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "Error resetting device.\n\n");
+    fprintf(stderr, "[POHEMUS] Error resetting device.\n\n");
     return 1;
   }
   // // Shutdown

@@ -57,11 +57,7 @@ int Viper::device_data_mode(data_mode_e mode)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   int retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    fprintf(stderr, "retval %d.\n\n", retval);
-  }
-  else
+  if (!retval)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -79,8 +75,9 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
     CFrameInfo fi(g_rxbuf, g_nrxcount);
     if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
     {
-      fprintf(stderr, "cmd: %d\n", fi.cmd());
-      fprintf(stderr, "action: %d\n", fi.action());
+      fprintf(stderr, "[POLHEMUS] Error in message reply...\n");
+      fprintf(stderr, "reply cmd: %d\n", fi.cmd());
+      fprintf(stderr, "reply action: %d\n", fi.action());
       fprintf(stderr, "cmd sent: %d\n", cmd_type);
       retval = -1;
     }

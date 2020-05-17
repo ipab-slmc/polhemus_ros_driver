@@ -107,7 +107,7 @@ int Liberty::receive_pno_data_frame(void)
   }
   else
   {
-    fprintf(stderr, "PNO receive failed.\n");
+    fprintf(stderr, "[POHEMUS] PNO receive failed.\n");
     retval = 0;
   }
   return retval;
