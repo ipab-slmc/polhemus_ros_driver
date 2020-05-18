@@ -301,9 +301,9 @@ int main(int argc, char** argv) {
       return 1;
     }
 
-	  device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
+    device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
 
-	  ROS_INFO("[POLHEMUS] Initialising Viper device.");
+    ROS_INFO("[POLHEMUS] Initialising Viper device.");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;
   }
@@ -326,12 +326,12 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  retval = device->reset_boresight();
-  if (retval)
-  {
-    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
-    return 1;
-  }
+//  retval = device->reset_boresight();
+//  if (retval)
+//  {
+//    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
+//    return 1;
+//  }
 
   device->device_binary_mode(); // activate binary mode
 
@@ -388,11 +388,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  retval = device->send_saved_calibration();
-  if (retval)
-  {
-    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
-  }
+//  retval = device->send_saved_calibration();
+//  if (retval)
+//  {
+//    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
+//  }
 
   gettimeofday(&tv, NULL);
   ROS_INFO("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
