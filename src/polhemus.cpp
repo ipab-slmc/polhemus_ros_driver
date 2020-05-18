@@ -45,17 +45,17 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] USB write failed with code %d.\n\n", retval);
+    ROS_ERROR("[POLHEMUS] USB write failed with code %d.", retval);
   }
   else if (nActual != size)
   {
     size = nActual;
     retval = 1;
-    fprintf(stderr, "[POLHEMUS] write count wrong.\n\n");
+    ROS_ERROR("[POLHEMUS] write count wrong.\n\n");
   }
   else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
-    fprintf(stderr, "[POLHEMUS] Device write, size larger than max packet size.\n\n");
+    ROS_ERROR("[POLHEMUS] Device write, size larger than max packet size.");
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
   return retval;
@@ -64,11 +64,11 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 int Polhemus::device_init(void)
 {
   if (libusb_set_configuration(device_handle, CONFIGURATION) != 0)
-    fprintf(stderr, "[POLHEMUS] Could not set usb configuration to %d\n", CONFIGURATION);
+    ROS_ERROR("[POLHEMUS] Could not set usb configuration to %d", CONFIGURATION);
 
   if (libusb_claim_interface(device_handle, INTERFACE) != 0)
   {
-    fprintf(stderr, "[POLHEMUS] Could not claim usb interface %d\n", INTERFACE);
+    ROS_ERROR("[POLHEMUS] Could not claim usb interface %d", INTERFACE);
     return 1;
   }
 
@@ -80,7 +80,7 @@ int Polhemus::device_send(uint8_t *cmd, int &count)
 {
   if (device_write(cmd, count, TIMEOUT))
   {
-    warn("[POLHEMUS] Sending cmd `%s' to device failed\n");
+    ROS_WARN("[POLHEMUS] Sending cmd `%d' to device failed", *cmd);
     return 1;
   }
   return 0;
@@ -129,7 +129,7 @@ int Polhemus::send_saved_calibration(void)
   }
   else
   {
-    fprintf(stderr, "[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!\n\n");
+    ROS_WARN("[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!");
     return 0;
   }
 
@@ -154,12 +154,12 @@ int Polhemus::send_saved_calibration(void)
       if (x == 0 & y == 0 & z == 0)
       {
         // no previous calibration exists
-        fprintf(stderr, "[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!\n\n");
+        ROS_WARN("[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!");
         break;
       }
       else
       {
-        fprintf(stderr, "[POLHEMUS] Calibrating station %d.\n", i);
+        ROS_INFO("[POLHEMUS] Calibrating station %d.", i);
 
         if (name == "viper")
         {
@@ -203,7 +203,7 @@ int Polhemus::send_saved_calibration(void)
           retval = set_boresight(false, i, z, y, x);
           if (retval)
           {
-            fprintf(stderr, "[POLHEMUS] Error sending calibration from file.\n\n");
+            ROS_ERROR("[POLHEMUS] Error sending calibration from file.");
             break;
           }
         }
@@ -212,7 +212,7 @@ int Polhemus::send_saved_calibration(void)
     else
     {
       // no previous calibration exists
-      fprintf(stderr, "[POLHEMUS] Station could not be found in calibration, please calibrate before proceeding!!!\n\n");
+      ROS_WARN("[POLHEMUS] Station could not be found in calibration, please calibrate before proceeding!!!");
       break;
     }
   }
@@ -261,7 +261,7 @@ bool Polhemus::calibrate(void)
     fprintf(stderr, "pitch: %f\n", pitch);
     fprintf(stderr, "yaw: %f\n", yaw);
 
-    fprintf(stderr, "[POLHEMUS] Calibrating station %d.\n", i);
+    ROS_INFO("[POLHEMUS] Calibrating station %d.", i);
 
     // save values to config file
     std::string x_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i) + "/x";
@@ -285,20 +285,20 @@ bool Polhemus::calibrate(void)
   retval = set_boresight(false, -1, 0, 0, 0);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Calibration failed.\n");
+    ROS_ERROR("[POLHEMUS] Calibration failed.");
   }
 
   // set data mode back to continuous
   retval = define_data_type(DATA_TYPE_QUAT);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Setting data type to quaternion, failed.\n");
+    ROS_ERROR("[POLHEMUS] Setting data type to quaternion, failed.\n");
   }
 
   retval = device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Setting data mode to continuous, failed.\n");
+    ROS_ERROR("[POLHEMUS] Setting data mode to continuous, failed.\n");
   }
 
   return true;
@@ -306,14 +306,14 @@ bool Polhemus::calibrate(void)
 
 bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res)
 {
-  printf("[POLHEMUS] Calibration request...");
+  ROS_INFO("[POLHEMUS] Calibration request...");
   res.success = calibrate();
   return true;
 }
 
 bool Polhemus::persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res)
 {
-  printf("[POLHEMUS] Making config persistent");
+  ROS_INFO("[POLHEMUS] Making config persistent");
   res.success = persist_commands();
   return true;
 }

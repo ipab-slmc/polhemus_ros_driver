@@ -7,6 +7,7 @@
 #define POLHEMUS_H
 
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <string>

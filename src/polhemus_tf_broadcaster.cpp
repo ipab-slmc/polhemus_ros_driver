@@ -82,22 +82,6 @@ static void signal_handler(int s) {
   }
 }
 
-static void print_hex(FILE *stream, const char *buf, size_t size) {
-  const char *c;
-  for (c = buf; c != buf + size; ++c)
-    fprintf(stream, "[POLHEMUS] %02x:%c ", (unsigned char) *c, isprint(*c) ? *c : '.');
-  fprintf(stream, "\n");
-}
-
-static void print_ascii(FILE *stream, const char *buf, size_t size) {
-  const char *c;
-  for (c = buf; c != buf + size; ++c)
-    if (isprint(*c)) {
-      fprintf(stream, "%c", *c);
-    }
-  fprintf(stream, "\n");
-}
-
 void release_usb(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo)
 {
   if ((usbhnd == 0) || (*usbhnd == 0))
@@ -297,12 +281,12 @@ int main(int argc, char** argv) {
     if (retval)
     {
       //error connecting
-      fprintf(stderr, "[POLHEMUS] Error connecting to device.\n\n");
+      ROS_ERROR("[POLHEMUS] Error connecting to device.");
       return 1;
     }
 
 	  device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
-	  fprintf(stderr, "[POLHEMUS] Initialising liberty device.\n\n");
+	  ROS_INFO("[POLHEMUS] Initialising liberty device.");
     device->endpoint_in = LIBERTY_ENDPOINT_IN;
     device->endpoint_out = LIBERTY_ENDPOINT_OUT;
   }
@@ -313,19 +297,19 @@ int main(int argc, char** argv) {
     if (retval)
     {
       //error connecting
-      fprintf(stderr, "[POLHEMUS] Error connecting to device.\n\n");
+      ROS_ERROR("[POLHEMUS] Error connecting to device.");
       return 1;
     }
 
 	  device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
 
-    fprintf(stderr, "[POLHEMUS] Initialising Viper device.\n\n");
+	  ROS_INFO("[POLHEMUS] Initialising Viper device.");
     device->endpoint_in = g_usbinfo.ep_in;
     device->endpoint_out = g_usbinfo.ep_out;
   }
   else
   {
-	  fprintf(stderr, "[POLHEMUS] Could not find a valid Polhemus device type on parameter server.\n");
+    ROS_ERROR("[POLHEMUS] Could not find a valid Polhemus device type on parameter server.");
 	  abort();
   }
 
@@ -338,14 +322,14 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error resetting device.\n\n");
+    ROS_ERROR("[POLHEMUS] Error resetting device.");
     return 1;
   }
 
   retval = device->reset_boresight();
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error resetting boresight.\n\n");
+    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
     return 1;
   }
 
@@ -354,38 +338,38 @@ int main(int argc, char** argv) {
   retval = device->request_num_of_stations();
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error reading number of stations.\n\n");
+    ROS_ERROR("[POLHEMUS] Error reading number of stations.");
     return 1;
   }
   else
   {
-    fprintf(stderr, "[POLHEMUS] Found %d stations.\n\n", device->station_count);
+    ROS_INFO("[POLHEMUS] Found %d stations.", device->station_count);
     nstations = device->station_count;
   }
 
   // define quaternion data type
-  printf("[POLHEMUS] Setting data type to quaternion\n");
+  ROS_INFO("[POLHEMUS] Setting data type to quaternion");
   retval = device->define_data_type(DATA_TYPE_QUAT);
 
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error setting data type.\n\n");
+    ROS_ERROR("[POLHEMUS] Error setting data type.");
     return 1;
   }
 
   // Calibration service
   ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
-  printf("[POLHEMUS] Service ready to calibrate the sensors.\n");
+  ROS_INFO("[POLHEMUS] Service ready to calibrate the sensors.");
 
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
 
-  printf("[POLHEMUS] Setting the output hemisphere\n");
+  ROS_INFO("[POLHEMUS] Setting the output hemisphere");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error setting hemisphere.\n\n");
+    ROS_ERROR("[POLHEMUS] Error setting hemisphere.");
     return 1;
   }
 
@@ -396,22 +380,22 @@ int main(int argc, char** argv) {
 
   go_on = 1;
 
-  printf("[POLHEMUS] Enabling continuous data mode...\n");
+  ROS_INFO("[POLHEMUS] Enabling continuous data mode...");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error setting data mode to continuous.\n\n");
+    ROS_ERROR("[POLHEMUS] Error setting data mode to continuous.");
     return 1;
   }
 
   retval = device->send_saved_calibration();
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Calibration not loaded.\n\n");
+    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
   }
 
   gettimeofday(&tv, NULL);
-  printf("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
+  ROS_INFO("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
@@ -431,7 +415,7 @@ int main(int argc, char** argv) {
     {
       if (flag == 0 || flag == 2)
       {
-        fprintf(stderr, "[POLHEMUS] No position and orientation data received from Polhemus system!!!\n");
+        ROS_ERROR("[POLHEMUS] No position and orientation data received from Polhemus system!!!");
         retval = device->device_reset();
         retval = device->device_data_mode(DATA_CONTINUOUS);
         flag = 1;
@@ -441,7 +425,7 @@ int main(int argc, char** argv) {
     {
       if (flag < 2)
       {
-        fprintf(stderr, "[POLHEMUS] Polhemus system is reporting 0 sensors.\n");
+        ROS_ERROR("[POLHEMUS] Polhemus system is reporting 0 sensors.");
         retval = device->device_reset();
         retval = device->device_data_mode(DATA_CONTINUOUS);
         flag = 2;
@@ -451,7 +435,7 @@ int main(int argc, char** argv) {
     {
       if (flag >= 1)
       {
-        fprintf(stderr, "[POLHEMUS] Position and orientation data now received from Polhemus system!!!\n");
+        ROS_WARN("[POLHEMUS] Position and orientation data now received from Polhemus system!!!");
         flag = 0;
       }
       /* Note: timestamp is the time in ms after the first read to the
@@ -485,7 +469,7 @@ int main(int argc, char** argv) {
   retval = device->device_reset();
   if (retval)
   {
-    fprintf(stderr, "[POLHEMUS] Error resetting device.\n\n");
+    ROS_ERROR("[POLHEMUS] Error resetting device.");
     return 1;
   }
   // // Shutdown
