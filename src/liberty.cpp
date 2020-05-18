@@ -57,11 +57,12 @@ int Liberty::device_reset(void)
   return retval;
 }
 
-void Liberty::device_binary_mode(void)
+int Liberty::device_binary_mode(void)
 {
   unsigned char command[] = "f1\r";
   int size = sizeof(command) - 1;
-  device_send(command, size);
+  int retval = device_send(command, size);
+  return retval;
 }
 
 void Liberty::generate_data_structure(void)
@@ -72,31 +73,31 @@ void Liberty::generate_data_structure(void)
 int Liberty::device_data_mode(data_mode_e mode)
 {
   int size;
-  int retval;
+  int retval = RETURN_ERROR;
   switch (mode)
   {
     case DATA_CONTINUOUS:
     {
       unsigned char command[] = "c\rc\r";
       size = sizeof(command) - 1;
-      device_send(command, size);
-      return 0;
+      retval = device_send(command, size);
+      return retval;
     }
     case DATA_SINGLE:
     {
       unsigned char command[] = "p";
       size = sizeof(command) - 1;
-      device_send(command, size);
-      return 0;
+      retval = device_send(command, size);
+      return retval;
     }
     default:
-      return 0;
+      return retval;
   }
 }
 
 int Liberty::receive_pno_data_frame(void)
 {
-  int retval = -1;
+  int retval = RETURN_ERROR;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
   device_read(stations, g_nrxcount, true);
   if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
@@ -128,7 +129,7 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 
 int Liberty::define_data_type(data_type_e data_type)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   //unsigned char command[15];
   unsigned char* command;
   int size = 0;
@@ -147,7 +148,7 @@ int Liberty::define_data_type(data_type_e data_type)
   }
   else
   {
-    return 1;
+    return retval;
   }
 
   retval = device_send(command, size);
@@ -156,6 +157,7 @@ int Liberty::define_data_type(data_type_e data_type)
 
 int Liberty::request_num_of_stations(void)
 {
+  int retval = RETURN_ERROR;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
   int size = sizeof(command) - 1;
@@ -167,18 +169,15 @@ int Liberty::request_num_of_stations(void)
   if (resp.head.init_cmd == LIBERTY_ACTIVE_STATION_STATE_CMD)
   {
     station_count = count_bits(resp.detected & resp.active);
-    return 0;
+    retval = 0;
   }
-  else
-  {
-    return 1;
-  }
+  return retval;
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Liberty::set_hemisphere(int x, int y, int z)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   unsigned char command[6];
   int size = sizeof(command) - 1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
@@ -188,6 +187,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
 
 int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
 {
+  int retval = RETURN_ERROR;
   unsigned char command[11];
   int size = sizeof(command) - 1;
   if (station == -1)
@@ -199,13 +199,13 @@ int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float ar
     snprintf((char *)command, size, "b%u,%f,%f,%f,%d\r", station, arg_1, arg_2, arg_3, reset_origin);
   }
 
-  device_send(command, size);
-  return 0;
+  retval = device_send(command, size);
+  return retval;
 }
 
 int Liberty::reset_boresight(void)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   unsigned char command[] = {control('b'), '*', '\r', '\0' };
   int size = sizeof(command) - 1;
 

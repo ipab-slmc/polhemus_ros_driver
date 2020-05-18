@@ -28,6 +28,8 @@
 #define VPUSB_READ_TIMEOUT_MS 300
 #define PI 3.14159265359
 
+#define RETURN_ERROR -1
+
 /* make control character out of ordinary character */
 #define control(c) ((c) & 0x1f)
 
@@ -52,7 +54,7 @@ public:
 
   /* set up usb interface and configuration, send initial magic and reset */
   int device_init(void);
-  virtual void device_binary_mode(void);
+  virtual int device_binary_mode(void);
   virtual int device_data_mode(data_mode_e mode);
   /* send a command */
   int device_send(uint8_t *cmd, int &count);

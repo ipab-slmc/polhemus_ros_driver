@@ -40,24 +40,27 @@ int Polhemus::count_bits(uint16_t v) {
 int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 {
   int nActual = 0;
-  int retval = 0;
+  int retval = RETURN_ERROR;
 
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
-  if (retval)
+  if (retval != 0)
   {
     ROS_ERROR("[POLHEMUS] USB write failed with code %d.", retval);
+    retval = RETURN_ERROR;
   }
   else if (nActual != size)
   {
     size = nActual;
-    retval = 1;
+    retval = RETURN_ERROR;
     ROS_ERROR("[POLHEMUS] write count wrong.\n\n");
   }
   else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
+    retval = RETURN_ERROR;
     ROS_ERROR("[POLHEMUS] Device write, size larger than max packet size.");
-    retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
+    libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
   }
+
   return retval;
 }
 
@@ -69,7 +72,7 @@ int Polhemus::device_init(void)
   if (libusb_claim_interface(device_handle, INTERFACE) != 0)
   {
     ROS_ERROR("[POLHEMUS] Could not claim usb interface %d", INTERFACE);
-    return 1;
+    return RETURN_ERROR;
   }
 
   device_reset();
@@ -81,7 +84,7 @@ int Polhemus::device_send(uint8_t *cmd, int &count)
   if (device_write(cmd, count, TIMEOUT))
   {
     ROS_WARN("[POLHEMUS] Sending cmd `%d' to device failed", *cmd);
-    return 1;
+    return RETURN_ERROR;
   }
   return 0;
 }
@@ -89,18 +92,20 @@ int Polhemus::device_send(uint8_t *cmd, int &count)
 int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 {
   uint32_t timeout = VPUSB_READ_TIMEOUT_MS;
-  int retval = 0;
+  int retval = RETURN_ERROR;
   int nActual = 0;
 
   retval = libusb_bulk_transfer(device_handle, endpoint_in, (unsigned char*)pbuf, size, &nActual, timeout);
 
   if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
   {
-    retval = 1;
+    retval = RETURN_ERROR;
     size = 0;
-  } else
+  }
+  else
   {
     size = nActual;
+    retval = 0;
   }
 
   return retval;
@@ -118,7 +123,7 @@ void Polhemus::device_clear_input(void)
 
 int Polhemus::send_saved_calibration(void)
 {
-  int retval = 1;
+  int retval = RETURN_ERROR;
   if (nh->hasParam("/calibration/" + name + "_calibration/rotations"))
   {
     retval = receive_pno_data_frame();
@@ -201,7 +206,7 @@ int Polhemus::send_saved_calibration(void)
           fprintf(stderr, "z %f.\n", z);
 
           retval = set_boresight(false, i, z, y, x);
-          if (retval)
+          if (retval == RETURN_ERROR)
           {
             ROS_ERROR("[POLHEMUS] Error sending calibration from file.");
             break;
@@ -216,13 +221,18 @@ int Polhemus::send_saved_calibration(void)
       break;
     }
   }
-  define_data_type(DATA_TYPE_QUAT);
+  if (name == "viper")
+  {
+    define_data_type(DATA_TYPE_QUAT);
+  }
+
   device_data_mode(DATA_CONTINUOUS);
+  return 0;
 }
 
 bool Polhemus::calibrate(void)
 {
-  int retval = 1;
+  bool retval = false;
 
   if (name == "viper")
   {
@@ -238,7 +248,10 @@ bool Polhemus::calibrate(void)
   device_clear_input();
   reset_boresight();
 
-  define_data_type(DATA_TYPE_EULER);
+  if (name == "viper")
+  {
+    define_data_type(DATA_TYPE_EULER);
+  }
 
   for (int i = 0; i < station_count; ++i)
   {
@@ -282,23 +295,30 @@ bool Polhemus::calibrate(void)
     }
   }
 
-  retval = set_boresight(false, -1, 0, 0, 0);
-  if (retval)
+  int ret = set_boresight(false, -1, 0, 0, 0);
+
+  if (ret == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Calibration failed.");
+    return retval;
+  }
+
+  if (name == "viper")
+  {
+    ret = define_data_type(DATA_TYPE_QUAT);
+    if (ret == RETURN_ERROR)
+    {
+      ROS_ERROR("[POLHEMUS] Setting data type to quaternion, failed.\n");
+      return retval;
+    }
   }
 
   // set data mode back to continuous
-  retval = define_data_type(DATA_TYPE_QUAT);
-  if (retval)
-  {
-    ROS_ERROR("[POLHEMUS] Setting data type to quaternion, failed.\n");
-  }
-
-  retval = device_data_mode(DATA_CONTINUOUS);
-  if (retval)
+  ret = device_data_mode(DATA_CONTINUOUS);
+  if (ret == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Setting data mode to continuous, failed.\n");
+    return retval;
   }
 
   return true;
@@ -334,7 +354,7 @@ int Polhemus::define_data_type(data_type_e data_type)
 {
 }
 
-void Polhemus::device_binary_mode(void)
+int Polhemus::device_binary_mode(void)
 {
 }
 

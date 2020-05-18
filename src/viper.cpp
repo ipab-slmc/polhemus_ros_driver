@@ -50,14 +50,14 @@ int Viper::device_data_mode(data_mode_e mode)
       action = CMD_ACTION_RESET;
       break;
     default:
-      return -1;
+      return RETURN_ERROR;
   }
   viper_command.Fill(cmd_type, action);
   viper_command.Prepare(g_txbuf, g_ntxcount);
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   int retval = device_send(pbuf, nBytes);
-  if (!retval)
+  if (retval != RETURN_ERROR)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -66,7 +66,7 @@ int Viper::device_data_mode(data_mode_e mode)
 
 int Viper::receive_data_frame(viper_cmds_e cmd_type)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   g_nrxcount = VIPER_RX_BUF_SIZE;
   retval = device_read(g_rxbuf, g_nrxcount, true);
 
@@ -79,7 +79,7 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
       ROS_DEBUG("reply cmd: %d\n", fi.cmd());
       ROS_DEBUG("reply action: %d\n", fi.action());
       ROS_DEBUG("cmd sent: %d\n", cmd_type);
-      retval = -1;
+      retval = RETURN_ERROR;
     }
   }
   return retval;
@@ -87,7 +87,7 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
 
 int Viper::receive_pno_data_frame(void)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   g_nrxcount = VIPER_RX_BUF_SIZE;
   retval = device_read(g_rxbuf, g_nrxcount, true);
   if (retval == 0)
@@ -99,7 +99,7 @@ int Viper::receive_pno_data_frame(void)
 
     if (!bytesextracted)
     {
-      retval = -1;
+      retval = RETURN_ERROR;
       return retval;
     }
     // bitmap of active sensors
@@ -109,7 +109,7 @@ int Viper::receive_pno_data_frame(void)
     station_count = pno.SensorCount();
     return station_count;
   }
-  return -1;
+  return RETURN_ERROR;
 }
 
 int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
@@ -131,7 +131,7 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 
 int Viper::define_data_type(data_type_e data_type)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
 
   viper_cmds_e cmd_type = CMD_UNITS;
   viper_cmd_actions_e action = CMD_ACTION_SET;
@@ -148,7 +148,7 @@ int Viper::define_data_type(data_type_e data_type)
   }
   else
   {
-    return 1;
+    return retval;
   }
 
   cfg.pos_units = POS_METER;
@@ -158,11 +158,7 @@ int Viper::define_data_type(data_type_e data_type)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -172,7 +168,7 @@ int Viper::define_data_type(data_type_e data_type)
 
 int Viper::request_num_of_stations(void)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_STATION_MAP;
   viper_cmd_actions_e action = CMD_ACTION_GET;
   CVPcmd viper_command;
@@ -186,11 +182,7 @@ int Viper::request_num_of_stations(void)
 
   retval = device_send(pbuf, nBytes);
 
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     g_nrxcount = VIPER_RX_BUF_SIZE;
     retval = device_read(g_rxbuf, g_nrxcount, true);
@@ -215,7 +207,7 @@ int Viper::request_num_of_stations(void)
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Viper::set_hemisphere(int x, int y, int z)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_HEMISPHERE;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_hemisphere_config_t cfg;
@@ -229,11 +221,7 @@ int Viper::set_hemisphere(int x, int y, int z)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -242,7 +230,7 @@ int Viper::set_hemisphere(int x, int y, int z)
 
 int Viper::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_BORESIGHT;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_boresight_config_t cfg;
@@ -258,11 +246,7 @@ int Viper::set_boresight(bool reset_origin, int station, float arg_1, float arg_
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -271,7 +255,7 @@ int Viper::set_boresight(bool reset_origin, int station, float arg_1, float arg_
 
 int Viper::reset_boresight(void)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_BORESIGHT;
   viper_cmd_actions_e action = CMD_ACTION_RESET;
 
@@ -286,11 +270,7 @@ int Viper::reset_boresight(void)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -309,7 +289,7 @@ tf2::Quaternion Viper::get_quaternion(int station_id)
 
 int Viper::set_source(int source)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_SRC_SELECT;
   viper_cmd_actions_e action = CMD_ACTION_SET;
   viper_src_select_cfg_t cfg;
@@ -322,11 +302,7 @@ int Viper::set_source(int source)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
@@ -335,7 +311,7 @@ int Viper::set_source(int source)
 
 bool Viper::persist_commands(void)
 {
-  int retval = 0;
+  int retval = RETURN_ERROR;
   viper_cmds_e cmd_type = CMD_PERSIST;
   viper_cmd_actions_e action = CMD_ACTION_SET;
 
@@ -347,16 +323,12 @@ bool Viper::persist_commands(void)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
-  if (retval)
-  {
-    ;
-  }
-  else
+  if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
 
-  if (! retval)
+  if (retval == 0)
   {
     return true;
   }

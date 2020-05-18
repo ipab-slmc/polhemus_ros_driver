@@ -41,7 +41,7 @@ public:
 	~Liberty(void);
 	int request_num_of_stations(void);
 	int device_reset(void);
-	void device_binary_mode(void);
+	int device_binary_mode(void);
 	int device_data_mode(data_mode_e mode);
 	int receive_pno_data_frame(void);
 	int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);

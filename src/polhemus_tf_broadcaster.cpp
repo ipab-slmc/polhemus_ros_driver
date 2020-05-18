@@ -134,7 +134,7 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
 int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid, uint16_t pid,
                      vp_usbdevinfo arrDevInfo[], std::size_t &arrcount)
 {
-  int r = 0;
+  int retval = RETURN_ERROR;
   ssize_t devcount = libusb_get_device_list(pctx, &devlist);
   if (devcount < 0)
     return (int) devcount; // returns error code < 0
@@ -148,8 +148,8 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
   while ((dev = devlist[i]) != NULL)
   {
     struct libusb_device_descriptor desc;
-    r = libusb_get_device_descriptor(dev, &desc);
-    if (r < 0)
+    retval = libusb_get_device_descriptor(dev, &desc);
+    if (retval < 0)
       break;
 
     if (desc.idVendor == vid && desc.idProduct == pid)
@@ -172,16 +172,16 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
 
   arrcount = iFoundCount;
 
-  return r;
+  return retval;
 }
 
 int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16_t vid, uint16_t pid)
 {
 
-  int r = 0;
+  int retval = RETURN_ERROR;
 
   if (libusb_init (NULL))
-    return -1;
+    return retval;
 
   if (*usbhnd)
     release_usb(usbhnd, usbinfo);
@@ -190,8 +190,8 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
   std::size_t arrcount = VPUSB_MAX_DISCOVERABLE;
   libusb_device **devlist;
 
-  if ((r = create_vip_list(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
-    return r;
+  if ((retval = create_vip_list(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
+    return retval;
 
   for (int d = 0; d < (int) arrcount; d++)
   {
@@ -202,20 +202,25 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
     uint8_t ep_in = 0, ep_out = 0;
     uint16_t out_pktsize = 0;
 
-    if ((r = libusb_open(dev, &handle)))
+    if ((retval = libusb_open(dev, &handle)))
     {
-    } else if ((r = libusb_get_config_descriptor(dev, 0, &conf_desc)))
+      ;
+    }
+    else if ((retval = libusb_get_config_descriptor(dev, 0, &conf_desc)))
     {
       libusb_close(handle);
-    } else
+    }
+    else
     {
       nb_ifaces = conf_desc->bNumInterfaces;
       claimed_ifaces = 0;
-      for (uint8_t i = 0; (i < nb_ifaces) && (r == 0); i++)
+      for (uint8_t i = 0; (i < nb_ifaces) && (retval == 0); i++)
       {
-        if ((r = libusb_claim_interface(handle, (int) i)))
+        if ((retval = libusb_claim_interface(handle, (int) i)))
         {
-        } else
+          ;
+        }
+        else
         {
           claimed_ifaces++;
 
@@ -251,9 +256,9 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
   libusb_free_device_list(devlist, 1);
 
   if (!usbhnd)
-    r = -99;
+    retval = -99;
 
-  return r;
+  return retval;
 }
 
 
@@ -266,7 +271,7 @@ int main(int argc, char** argv) {
   uint16_t product_id;
   std::string product_type;
   Polhemus *device;
-  int retval = 0;
+  int retval = RETURN_ERROR;
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
@@ -278,7 +283,7 @@ int main(int argc, char** argv) {
   {
     product_id = LIBERTY_PRODUCT;
     retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, product_id);
-    if (retval)
+    if (retval == RETURN_ERROR)
     {
       //error connecting
       ROS_ERROR("[POLHEMUS] Error connecting to device.");
@@ -294,7 +299,7 @@ int main(int argc, char** argv) {
   {
     product_id = VIPER_PRODUCT;
     retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, product_id);
-    if (retval)
+    if (retval == RETURN_ERROR)
     {
       //error connecting
       ROS_ERROR("[POLHEMUS] Error connecting to device.");
@@ -320,14 +325,14 @@ int main(int argc, char** argv) {
   device->device_handle = g_usbhnd;
 
   retval = device->device_reset();
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");
     return 1;
   }
 
 //  retval = device->reset_boresight();
-//  if (retval)
+//  if (retval == RETURN_ERROR)
 //  {
 //    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
 //    return 1;
@@ -336,7 +341,7 @@ int main(int argc, char** argv) {
   device->device_binary_mode(); // activate binary mode
 
   retval = device->request_num_of_stations();
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error reading number of stations.");
     return 1;
@@ -351,7 +356,7 @@ int main(int argc, char** argv) {
   ROS_INFO("[POLHEMUS] Setting data type to quaternion");
   retval = device->define_data_type(DATA_TYPE_QUAT);
 
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error setting data type.");
     return 1;
@@ -367,7 +372,7 @@ int main(int argc, char** argv) {
 
   ROS_INFO("[POLHEMUS] Setting the output hemisphere");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error setting hemisphere.");
     return 1;
@@ -382,14 +387,14 @@ int main(int argc, char** argv) {
 
   ROS_INFO("[POLHEMUS] Enabling continuous data mode...");
   retval = device->device_data_mode(DATA_CONTINUOUS);
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error setting data mode to continuous.");
     return 1;
   }
 
 //  retval = device->send_saved_calibration();
-//  if (retval)
+//  if (retval == RETURN_ERROR)
 //  {
 //    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
 //  }
@@ -452,10 +457,10 @@ int main(int argc, char** argv) {
 
       for (i=0; i < sensor_count; i++)
       {
-        device->fill_pno_data(&transformStamped, i);
+        retval = device->fill_pno_data(&transformStamped, i);
 
         // Broadcast frame
-        if (!retval)
+        if (retval == 0)
         {
           br.sendTransform(transformStamped);
         }
@@ -467,7 +472,7 @@ int main(int argc, char** argv) {
   }
 
   retval = device->device_reset();
-  if (retval)
+  if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");
     return 1;
