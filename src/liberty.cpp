@@ -105,10 +105,6 @@ int Liberty::receive_pno_data_frame(void)
     station_count = g_nrxcount / sizeof(liberty_pno_frame_t);
     retval = station_count;
   }
-  else
-  {
-    fprintf(stderr, "[POLHEMUS] PNO receive failed.\n");
-  }
   return retval;
 }
 
