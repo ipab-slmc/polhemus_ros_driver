@@ -74,7 +74,7 @@ int Liberty::device_data_mode(data_mode_e mode)
   {
     case DATA_CONTINUOUS:
     {
-      unsigned char command[] = "c\rc\r";
+      unsigned char command[] = "c\r";
       size = sizeof(command)-1;
       device_send(command, size);
       return 0;
@@ -151,9 +151,22 @@ int Liberty::request_num_of_stations(void)
 int Liberty::set_hemisphere(int x, int y, int z)
 {
   int retval = 0;
-  unsigned char command[32];
+  int negative_sign_counter = 0;
+  int initial_cmd_size = 10;
+
+  if (x < 0)
+    negative_sign_counter += 1;
+  if (y < 0)
+    negative_sign_counter += 1;
+  if (z < 0)
+    negative_sign_counter += 1;
+
+  int buf_cmd_size = initial_cmd_size + negative_sign_counter;
+  unsigned char command[buf_cmd_size];
+  sprintf((char *)command, "h*,%d,%d,%d\r", x, y, z);
+
   int size = sizeof(command)-1;
-  snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
+
   retval = device_send(command, size);
   return retval;
 }

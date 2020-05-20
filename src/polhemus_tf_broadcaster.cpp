@@ -434,6 +434,10 @@ int main(int argc, char** argv) {
         }
       }
     }
+    else
+    {
+      ROS_ERROR("Sensor count is 0");
+    }
     
     ros::spinOnce();
     rate.sleep();
