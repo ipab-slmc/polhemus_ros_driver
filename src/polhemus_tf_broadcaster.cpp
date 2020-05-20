@@ -436,7 +436,7 @@ int main(int argc, char** argv) {
     }
     else
     {
-      ROS_WARN("Sensor 0, could not get sensor data");
+      ROS_ERROR("Sensor count is 0");
     }
     
     ros::spinOnce();
