@@ -328,7 +328,6 @@ int main(int argc, char** argv) {
   if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");
-    return 1;
   }
 
 //  retval = device->reset_boresight();
@@ -475,7 +474,6 @@ int main(int argc, char** argv) {
   if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");
-    return 1;
   }
   // // Shutdown
   libusb_close(g_usbhnd);

@@ -178,7 +178,7 @@ int Liberty::request_num_of_stations(void)
 int Liberty::set_hemisphere(int x, int y, int z)
 {
   int retval = RETURN_ERROR;
-  unsigned char command[6];
+  unsigned char command[32];
   int size = sizeof(command) - 1;
   snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
   retval = device_send(command, size);
@@ -188,7 +188,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
 int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
 {
   int retval = RETURN_ERROR;
-  unsigned char command[11];
+  unsigned char command[21];
   int size = sizeof(command) - 1;
   if (station == -1)
   {
