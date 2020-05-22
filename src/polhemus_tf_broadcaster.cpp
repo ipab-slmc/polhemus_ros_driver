@@ -177,7 +177,6 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
 
 int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16_t vid, uint16_t pid)
 {
-
   int retval = RETURN_ERROR;
 
   if (libusb_init (NULL))
@@ -191,7 +190,16 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
   libusb_device **devlist;
 
   if ((retval = create_vip_list(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
+  {
     return retval;
+  }
+
+  if (arrcount == 0)
+  {
+    ROS_ERROR("[POLHEMUS] No Polhemus devices found. Please check that device is connected.\n");
+    return RETURN_ERROR;
+  }
+
 
   for (int d = 0; d < (int) arrcount; d++)
   {
@@ -287,7 +295,7 @@ int main(int argc, char** argv) {
     {
       //error connecting
       ROS_ERROR("[POLHEMUS] Error connecting to device.");
-      return 1;
+      return 0;
     }
 
 	  device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
@@ -302,8 +310,8 @@ int main(int argc, char** argv) {
     if (retval == RETURN_ERROR)
     {
       //error connecting
-      ROS_ERROR("[POLHEMUS] Error connecting to device.");
-      return 1;
+      ROS_ERROR("[POLHEMUS] Error connecting to device.\n");
+      return 0;
     }
 
     device = new Viper(product_type, VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);

@@ -94,8 +94,9 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
   uint32_t timeout = VPUSB_READ_TIMEOUT_MS;
   int retval = RETURN_ERROR;
   int nActual = 0;
+  unsigned char *pbuf_c = (unsigned char*) pbuf;
 
-  retval = libusb_bulk_transfer(device_handle, endpoint_in, (unsigned char*)pbuf, size, &nActual, timeout);
+  retval = libusb_bulk_transfer(device_handle, endpoint_in, pbuf_c, size, &nActual, timeout);
 
   if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
   {
