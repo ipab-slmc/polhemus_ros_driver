@@ -298,8 +298,8 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-	  device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
-	  ROS_INFO("[POLHEMUS] Initialising liberty device.");
+    device = new Liberty(product_type, LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
+    ROS_INFO("[POLHEMUS] Initialising liberty device.");
     device->endpoint_in = LIBERTY_ENDPOINT_IN;
     device->endpoint_out = LIBERTY_ENDPOINT_OUT;
   }
@@ -323,7 +323,7 @@ int main(int argc, char** argv) {
   else
   {
     ROS_ERROR("[POLHEMUS] Could not find a valid Polhemus device type on parameter server.");
-	  abort();
+    abort();
   }
 
   device->nh = &nh;
@@ -478,7 +478,7 @@ int main(int argc, char** argv) {
     rate.sleep();
   }
 
-  retval = device->device_reset();
+  retval = device->device_data_mode(DATA_RESET);
   if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");

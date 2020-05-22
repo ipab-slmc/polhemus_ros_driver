@@ -20,7 +20,8 @@
 
 
 Polhemus::Polhemus(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size):
-  name(name), g_rxbuf(new uint8_t[rx_buffer_size]), g_txbuf(new uint8_t[tx_buffer_size])
+  name(name), rx_buffer_size(rx_buffer_size), tx_buffer_size(tx_buffer_size), g_rxbuf(new uint8_t[rx_buffer_size]),
+  g_txbuf(new uint8_t[tx_buffer_size])
 {
 }
 
@@ -115,7 +116,6 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 void Polhemus::device_clear_input(void)
 {
   g_nrxcount = rx_buffer_size;
-
   while(g_nrxcount > 0)
   {
     device_read(g_rxbuf, g_nrxcount, true);

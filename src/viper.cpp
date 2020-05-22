@@ -57,7 +57,7 @@ int Viper::device_data_mode(data_mode_e mode)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   int retval = device_send(pbuf, nBytes);
-  if (retval != RETURN_ERROR)
+  if (retval != RETURN_ERROR && action != CMD_ACTION_RESET)
   {
     retval = receive_data_frame(cmd_type);
   }
