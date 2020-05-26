@@ -127,11 +127,11 @@ int Polhemus::send_saved_calibration(void)
   int retval = RETURN_ERROR;
   if (nh->hasParam("/calibration/" + name + "_calibration/rotations"))
   {
+    reset_boresight();
     retval = receive_pno_data_frame();
 
     device_reset();
 
-    reset_boresight();
   }
   else
   {
@@ -235,19 +235,12 @@ bool Polhemus::calibrate(void)
 {
   bool retval = false;
 
-  if (name == "viper")
-  {
-    device_data_mode(DATA_RESET);
-  }
-  else
-  {
-    device_data_mode(DATA_SINGLE);
-  }
-
-  // turn off continuous data mode first
-
-  device_clear_input();
   reset_boresight();
+
+  retval = receive_pno_data_frame();
+  retval = receive_pno_data_frame();
+
+  device_reset();
 
   if (name == "viper")
   {
@@ -285,15 +278,15 @@ bool Polhemus::calibrate(void)
     nh->setParam(x_name, roll);
     nh->setParam(y_name, pitch);
     nh->setParam(z_name, yaw);
+  }
 
-    if (name == "viper")
-    {
-      system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /calibration");
-    }
-    else
-    {
-      system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /calibration");
-    }
+  if (name == "viper")
+  {
+    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /calibration");
+  }
+  else
+  {
+    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /calibration");
   }
 
   int ret = set_boresight(false, -1, 0, 0, 0);
@@ -301,7 +294,6 @@ bool Polhemus::calibrate(void)
   if (ret == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Calibration failed.");
-    return retval;
   }
 
   if (name == "viper")

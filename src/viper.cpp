@@ -261,10 +261,7 @@ int Viper::reset_boresight(void)
 
   CVPcmd viper_command;
 
-  viper_command.Fill(cmd_type, action);
-  viper_command.Prepare(g_txbuf, g_ntxcount);
-
-  viper_command.Fill(cmd_type, action);
+  viper_command.Fill(cmd_type, action, -1);
   viper_command.Prepare(g_txbuf, g_ntxcount);
 
   int nBytes = g_ntxcount;

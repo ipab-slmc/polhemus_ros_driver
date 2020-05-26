@@ -338,12 +338,12 @@ int main(int argc, char** argv) {
     ROS_ERROR("[POLHEMUS] Error resetting device.");
   }
 
-//  retval = device->reset_boresight();
-//  if (retval == RETURN_ERROR)
-//  {
-//    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
-//    return 1;
-//  }
+  retval = device->reset_boresight();
+  if (retval == RETURN_ERROR)
+  {
+    ROS_ERROR("[POLHEMUS] Error resetting boresight.");
+    return 1;
+  }
 
   device->device_binary_mode(); // activate binary mode
 
@@ -400,11 +400,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-//  retval = device->send_saved_calibration();
-//  if (retval == RETURN_ERROR)
-//  {
-//    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
-//  }
+  retval = device->send_saved_calibration();
+  if (retval == RETURN_ERROR)
+  {
+    ROS_ERROR("[POLHEMUS] Calibration not loaded.");
+  }
 
   gettimeofday(&tv, NULL);
   ROS_INFO("[POLHEMUS] Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
