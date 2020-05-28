@@ -478,7 +478,8 @@ int main(int argc, char** argv) {
     rate.sleep();
   }
 
-  retval = device->device_data_mode(DATA_RESET);
+  retval = device->device_reset();
+
   if (retval == RETURN_ERROR)
   {
     ROS_ERROR("[POLHEMUS] Error resetting device.");

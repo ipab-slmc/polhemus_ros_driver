@@ -99,7 +99,12 @@ int Liberty::receive_pno_data_frame(void)
 {
   int retval = RETURN_ERROR;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
+
   device_read(stations, g_nrxcount, true);
+  if (g_nrxcount == 0)
+  {
+    return retval;
+  }
   if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
   {
     // update this as a sensor may have been dropped
