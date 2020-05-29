@@ -217,7 +217,15 @@ int Polhemus::send_saved_calibration(void)
 //          fprintf(stderr, "y %f.\n", y);
 //          fprintf(stderr, "z %f.\n", z);
 
-          retval = set_boresight(false, i, z, y, x);
+          if (name == "viper")
+          {
+            retval = set_boresight(false, i-1, z, y, x);
+          }
+          else
+          {
+            retval = set_boresight(false, i, z, y, x);
+          }
+
           if (retval == RETURN_ERROR)
           {
             ROS_ERROR("[POLHEMUS] Error sending calibration from file.");

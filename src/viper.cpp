@@ -117,7 +117,8 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
   // Set translation (in metres)
   int retval = 0;
   int index = count - 1;
-  transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum - 1);
+
+  transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(index)->SFinfo.bfSnum + 1);
   transform->transform.translation.x = pno.SensFrame(index)->pno.pos[0];
   transform->transform.translation.y = pno.SensFrame(index)->pno.pos[1];
   transform->transform.translation.z = pno.SensFrame(index)->pno.pos[2];
