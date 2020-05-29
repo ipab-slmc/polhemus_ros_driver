@@ -420,14 +420,14 @@ int main(int argc, char** argv) {
     if (go_on == 0)
       break;
 
-    // Update polhemus
+    // Update polhemus sensor count
     int sensor_count = device->receive_pno_data_frame();
 
     if (sensor_count == -1)
     {
       if (flag == 0 || flag == 2)
       {
-        ROS_ERROR("[POLHEMUS] No position and orientation data received from Polhemus system!!!");
+        ROS_DEBUG("[POLHEMUS] No position and orientation data received from Polhemus system!!!");
         retval = device->device_reset();
         retval = device->device_data_mode(DATA_CONTINUOUS);
         flag = 1;
@@ -437,7 +437,7 @@ int main(int argc, char** argv) {
     {
       if (flag < 2)
       {
-        ROS_ERROR("[POLHEMUS] Polhemus system is reporting 0 sensors.");
+        ROS_WARN("[POLHEMUS] Polhemus system is reporting 0 sensors.");
         retval = device->device_reset();
         retval = device->device_data_mode(DATA_CONTINUOUS);
         flag = 2;
@@ -447,7 +447,7 @@ int main(int argc, char** argv) {
     {
       if (flag >= 1)
       {
-        ROS_WARN("[POLHEMUS] Position and orientation data now received from Polhemus system!!!");
+        ROS_DEBUG("[POLHEMUS] Position and orientation data now received from Polhemus system!!!");
         flag = 0;
       }
       /* Note: timestamp is the time in ms after the first read to the
@@ -462,7 +462,7 @@ int main(int argc, char** argv) {
       transformStamped.header.stamp = ros::Time::now();
       transformStamped.header.frame_id = "polhemus_base";
 
-      for (i=0; i < sensor_count; i++)
+      for (i=1; i < sensor_count + 1; i++)
       {
         retval = device->fill_pno_data(&transformStamped, i);
 

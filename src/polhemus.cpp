@@ -45,13 +45,10 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
 
-  ROS_WARN("===============================");
   for (int i=0; i < nActual; i++)
   {
-    ROS_WARN("SEND byte %d: %d", i, int(buf[i]));
+    ROS_DEBUG("SEND byte %d: %d", i, int(buf[i]));
   }
-
-  ROS_WARN("===============================");
 
   if (retval != 0)
   {
@@ -110,7 +107,7 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 
   for (int i=0; i < nActual; i++)
   {
-    ROS_WARN("byte %d: %d", i, int(pbuf_c[i]));
+    ROS_DEBUG("RECEIVE byte %d: %d", i, int(pbuf_c[i]));
   }
 
   if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
@@ -155,7 +152,7 @@ int Polhemus::send_saved_calibration(void)
 
   // send the calibration saved in calibration.yaml
   // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
-  for (int i = 0; i < station_count; ++i)
+  for (int i = 1; i < station_count + 1; ++i)
   {
     if (nh->hasParam("/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i)))
     {
@@ -195,30 +192,30 @@ int Polhemus::send_saved_calibration(void)
           double roll, pitch, yaw;
           tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-          fprintf(stderr, "quat x: %f\n", q[0]);
-          fprintf(stderr, "quat y: %f\n", q[1]);
-          fprintf(stderr, "quat z: %f\n", q[2]);
-          fprintf(stderr, "quat w: %f\n", q[3]);
-
-          fprintf(stderr, "roll %f.\n", roll);
-          fprintf(stderr, "pitch %f.\n", pitch);
-          fprintf(stderr, "yaw %f.\n", yaw);
+//          fprintf(stderr, "quat x: %f\n", q[0]);
+//          fprintf(stderr, "quat y: %f\n", q[1]);
+//          fprintf(stderr, "quat z: %f\n", q[2]);
+//          fprintf(stderr, "quat w: %f\n", q[3]);
+//
+//          fprintf(stderr, "roll %f.\n", roll);
+//          fprintf(stderr, "pitch %f.\n", pitch);
+//          fprintf(stderr, "yaw %f.\n", yaw);
 
           roll = (roll * 180) / PI;
           pitch = (pitch * 180) / PI;
           yaw = (yaw * 180) / PI;
 
-          fprintf(stderr, "roll %f.\n", roll);
-          fprintf(stderr, "pitch %f.\n", pitch);
-          fprintf(stderr, "yaw %f.\n", yaw);
+//          fprintf(stderr, "roll %f.\n", roll);
+//          fprintf(stderr, "pitch %f.\n", pitch);
+//          fprintf(stderr, "yaw %f.\n", yaw);
 
           x = roll - x;
           y = pitch - y;
           z = yaw - z;
 
-          fprintf(stderr, "x %f.\n", x);
-          fprintf(stderr, "y %f.\n", y);
-          fprintf(stderr, "z %f.\n", z);
+//          fprintf(stderr, "x %f.\n", x);
+//          fprintf(stderr, "y %f.\n", y);
+//          fprintf(stderr, "z %f.\n", z);
 
           retval = set_boresight(false, i, z, y, x);
           if (retval == RETURN_ERROR)
@@ -261,26 +258,26 @@ bool Polhemus::calibrate(void)
     define_data_type(DATA_TYPE_EULER);
   }
 
-  for (int i = 0; i < station_count; ++i)
+  for (int i = 1; i < station_count + 1; ++i)
   {
     tf2::Quaternion q = get_quaternion(i);
 
     double roll, pitch, yaw;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-    fprintf(stderr, "quat x: %f\n", q[0]);
-    fprintf(stderr, "quat y: %f\n", q[1]);
-    fprintf(stderr, "quat z: %f\n", q[2]);
-    fprintf(stderr, "quat w: %f\n", q[3]);
+//    fprintf(stderr, "quat x: %f\n", q[0]);
+//    fprintf(stderr, "quat y: %f\n", q[1]);
+//    fprintf(stderr, "quat z: %f\n", q[2]);
+//    fprintf(stderr, "quat w: %f\n", q[3]);
 
     // convert to degrees
     roll = (roll * 180) / 3.14;
     pitch = (pitch * 180) / 3.14;
     yaw = (yaw * 180) / 3.14;
 
-    fprintf(stderr, "roll: %f\n", roll);
-    fprintf(stderr, "pitch: %f\n", pitch);
-    fprintf(stderr, "yaw: %f\n", yaw);
+//    fprintf(stderr, "roll: %f\n", roll);
+//    fprintf(stderr, "pitch: %f\n", pitch);
+//    fprintf(stderr, "yaw: %f\n", yaw);
 
     ROS_INFO("[POLHEMUS] Calibrating station %d.", i);
 

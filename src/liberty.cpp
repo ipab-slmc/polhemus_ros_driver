@@ -117,17 +117,19 @@ int Liberty::receive_pno_data_frame(void)
 int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
   int retval = 0;
+  int index = count - 1;
+
   // Set translation (conversion: inches -> meters)
-  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[count].head.station);
-  transform->transform.translation.x = 0.0254*stations[count].x;
-  transform->transform.translation.y = 0.0254*stations[count].y;
-  transform->transform.translation.z = 0.0254*stations[count].z;
+  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[count - 1].head.station);
+  transform->transform.translation.x = 0.0254*stations[index].x;
+  transform->transform.translation.y = 0.0254*stations[index].y;
+  transform->transform.translation.z = 0.0254*stations[index].z;
 
   // Set rotation
-  transform->transform.rotation.w = stations[count].quaternion[0];
-  transform->transform.rotation.x = stations[count].quaternion[1];
-  transform->transform.rotation.y = stations[count].quaternion[2];
-  transform->transform.rotation.z = stations[count].quaternion[3];
+  transform->transform.rotation.w = stations[index].quaternion[0];
+  transform->transform.rotation.x = stations[index].quaternion[1];
+  transform->transform.rotation.y = stations[index].quaternion[2];
+  transform->transform.rotation.z = stations[index].quaternion[3];
 
   return retval;
 }
@@ -135,7 +137,7 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 int Liberty::define_data_type(data_type_e data_type)
 {
   int retval = RETURN_ERROR;
-  //unsigned char command[15];
+
   unsigned char* command;
   int size = 0;
 
@@ -206,15 +208,25 @@ int Liberty::set_hemisphere(int x, int y, int z)
 int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4)
 {
   int retval = RETURN_ERROR;
-  unsigned char command[21];
-  int size = sizeof(command) - 1;
+  unsigned char command[32];
+  int size = sizeof(command);
+
   if (station == -1)
   {
-    snprintf((char *)command, size, "b*,%f,%f,%f,%d\r", arg_1, arg_2, arg_3, reset_origin);
+    snprintf((char *)command, size, "b*,%d,%d,%d,%d\r", int(arg_1), int(arg_2), int(arg_3), reset_origin);
   }
   else
   {
-    snprintf((char *)command, size, "b%u,%f,%f,%f,%d\r", station, arg_1, arg_2, arg_3, reset_origin);
+    snprintf((char *)command, size, "b%d,%d,%d,%d,%d\r", station, int(arg_1), int(arg_2), int(arg_3), reset_origin);
+  }
+
+  size = 1;
+  int i = 0;
+
+  while (command[i] != 13)
+  {
+    size += 1;
+    i++;
   }
 
   retval = device_send(command, size);
@@ -233,11 +245,9 @@ int Liberty::reset_boresight(void)
 
 tf2::Quaternion Liberty::get_quaternion(int station_id)
 {
-    tf2::Quaternion q(
-        stations[station_id].quaternion[1],
-        stations[station_id].quaternion[2],
-        stations[station_id].quaternion[3],
-        stations[station_id].quaternion[0]);
+  int index = station_id - 1;
+  tf2::Quaternion q(stations[index].quaternion[1], stations[index].quaternion[2],
+      stations[index].quaternion[3], stations[index].quaternion[0]);
 
-    return q;
+  return q;
 }

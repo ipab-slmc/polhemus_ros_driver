@@ -116,15 +116,16 @@ int Viper::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
 {
   // Set translation (in metres)
   int retval = 0;
-  transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum);
-  transform->transform.translation.x = pno.SensFrame(count)->pno.pos[0];
-  transform->transform.translation.y = pno.SensFrame(count)->pno.pos[1];
-  transform->transform.translation.z = pno.SensFrame(count)->pno.pos[2];
+  int index = count - 1;
+  transform->child_frame_id = "polhemus_station_" + std::to_string(pno.SensFrame(count)->SFinfo.bfSnum - 1);
+  transform->transform.translation.x = pno.SensFrame(index)->pno.pos[0];
+  transform->transform.translation.y = pno.SensFrame(index)->pno.pos[1];
+  transform->transform.translation.z = pno.SensFrame(index)->pno.pos[2];
   // Set rotation
-  transform->transform.rotation.w = pno.SensFrame(count)->pno.ori[0];
-  transform->transform.rotation.x = pno.SensFrame(count)->pno.ori[1];
-  transform->transform.rotation.y = pno.SensFrame(count)->pno.ori[2];
-  transform->transform.rotation.z = pno.SensFrame(count)->pno.ori[3];
+  transform->transform.rotation.w = pno.SensFrame(index)->pno.ori[0];
+  transform->transform.rotation.x = pno.SensFrame(index)->pno.ori[1];
+  transform->transform.rotation.y = pno.SensFrame(index)->pno.ori[2];
+  transform->transform.rotation.z = pno.SensFrame(index)->pno.ori[3];
 
   return retval;
 }
@@ -276,11 +277,12 @@ int Viper::reset_boresight(void)
 
 tf2::Quaternion Viper::get_quaternion(int station_id)
 {
+  int index = station_id - 1;
   tf2::Quaternion q(
-      pno.SensFrame(station_id)->pno.ori[1],
-      pno.SensFrame(station_id)->pno.ori[2],
-      pno.SensFrame(station_id)->pno.ori[3],
-      pno.SensFrame(station_id)->pno.ori[0]);
+      pno.SensFrame(index)->pno.ori[1],
+      pno.SensFrame(index)->pno.ori[2],
+      pno.SensFrame(index)->pno.ori[3],
+      pno.SensFrame(index)->pno.ori[0]);
   return q;
 }
 
