@@ -114,13 +114,12 @@ int Liberty::receive_pno_data_frame(void)
   return retval;
 }
 
-int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
+int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int index)
 {
   int retval = 0;
-  int index = count - 1;
 
   // Set translation (conversion: inches -> meters)
-  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[count - 1].head.station);
+  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[index].head.station);
   transform->transform.translation.x = 0.0254*stations[index].x;
   transform->transform.translation.y = 0.0254*stations[index].y;
   transform->transform.translation.z = 0.0254*stations[index].z;
@@ -144,6 +143,7 @@ int Liberty::define_data_type(data_type_e data_type)
   if (data_type == DATA_TYPE_QUAT)
   {
     unsigned char c[]  = "O*,8,9,11,3,7\r";  // quaternions
+
     command = c;
     size = sizeof(c) - 1;
   }

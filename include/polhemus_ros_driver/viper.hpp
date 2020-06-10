@@ -24,7 +24,7 @@ public:
   int device_reset(void);
   int device_data_mode(data_mode_e mode);
   int receive_pno_data_frame(void);
-  int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+  int fill_pno_data(geometry_msgs::TransformStamped *transform, int index);
   int define_data_type(data_type_e data_type);
   int set_hemisphere(int x, int y, int z);
 private:

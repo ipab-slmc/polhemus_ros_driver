@@ -462,7 +462,7 @@ int main(int argc, char** argv) {
       transformStamped.header.stamp = ros::Time::now();
       transformStamped.header.frame_id = "polhemus_base";
 
-      for (i=1; i < sensor_count + 1; i++)
+      for (i=0; i < sensor_count; i++)
       {
         retval = device->fill_pno_data(&transformStamped, i);
 

@@ -61,7 +61,7 @@ public:
   /* read until the device doesn't send anything else */
   void device_clear_input(void);
   virtual int receive_pno_data_frame(void);
-  virtual int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+  virtual int fill_pno_data(geometry_msgs::TransformStamped *transform, int index);
 
   int device_read(void *pbuf, int &count, bool bTOisErr/*=false*/);
   int device_write(uint8_t *buf, int size, int timeout);
