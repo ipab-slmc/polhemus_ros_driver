@@ -219,11 +219,11 @@ int Polhemus::send_saved_calibration(void)
 
           if (name == "viper")
           {
-            retval = set_boresight(false, i-1, z, y, x);
+            retval = set_boresight(false, i, z, y, x);
           }
           else
           {
-            retval = set_boresight(false, i, z, y, x);
+            retval = set_boresight(false, i + 1, z, y, x);
           }
 
           if (retval == RETURN_ERROR)

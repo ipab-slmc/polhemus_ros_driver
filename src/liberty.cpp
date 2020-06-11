@@ -119,7 +119,7 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int index
   int retval = 0;
 
   // Set translation (conversion: inches -> meters)
-  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[index].head.station);
+  transform->child_frame_id = "polhemus_station_" + std::to_string(stations[index].head.station - 1);
   transform->transform.translation.x = 0.0254*stations[index].x;
   transform->transform.translation.y = 0.0254*stations[index].y;
   transform->transform.translation.z = 0.0254*stations[index].z;
