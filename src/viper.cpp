@@ -275,9 +275,8 @@ int Viper::reset_boresight(void)
   return retval;
 }
 
-tf2::Quaternion Viper::get_quaternion(int station_id)
+tf2::Quaternion Viper::get_quaternion(int index)
 {
-  int index = station_id - 1;
   tf2::Quaternion q(
       pno.SensFrame(index)->pno.ori[1],
       pno.SensFrame(index)->pno.ori[2],

@@ -152,7 +152,7 @@ int Polhemus::send_saved_calibration(void)
 
   // send the calibration saved in calibration.yaml
   // read from param server the x, y and z for all stations, so we need to loop stations and send boresight command
-  for (int i = 1; i < station_count + 1; ++i)
+  for (int i = 0; i < station_count; ++i)
   {
     if (nh->hasParam("/calibration/" + name + "_calibration/rotations/station_" + std::to_string(i)))
     {
@@ -266,7 +266,7 @@ bool Polhemus::calibrate(void)
     define_data_type(DATA_TYPE_EULER);
   }
 
-  for (int i = 1; i < station_count + 1; ++i)
+  for (int i = 0; i < station_count; ++i)
   {
     tf2::Quaternion q = get_quaternion(i);
 
@@ -402,6 +402,6 @@ int Polhemus::set_source(int source)
 {
 }
 
-tf2::Quaternion Polhemus::get_quaternion(int station_id)
+tf2::Quaternion Polhemus::get_quaternion(int index)
 {
 }

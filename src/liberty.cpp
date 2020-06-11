@@ -244,9 +244,8 @@ int Liberty::reset_boresight(void)
   return retval;
 }
 
-tf2::Quaternion Liberty::get_quaternion(int station_id)
+tf2::Quaternion Liberty::get_quaternion(int index)
 {
-  int index = station_id - 1;
   tf2::Quaternion q(stations[index].quaternion[1], stations[index].quaternion[2],
       stations[index].quaternion[3], stations[index].quaternion[0]);
 

@@ -36,7 +36,7 @@ private:
   int receive_data_frame(viper_cmds_e cmd_type);
   int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
   int reset_boresight(void);
-  tf2::Quaternion get_quaternion(int station_id);
+  tf2::Quaternion get_quaternion(int index);
   int set_source(int source);
   int send_saved_calibration(void);
   bool persist_commands(void);

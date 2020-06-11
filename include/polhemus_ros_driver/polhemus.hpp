@@ -72,7 +72,7 @@ public:
   virtual int request_num_of_stations(void);
   virtual int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
   virtual int reset_boresight(void);
-  virtual tf2::Quaternion get_quaternion(int station_id);
+  virtual tf2::Quaternion get_quaternion(int index);
   virtual int set_source(int source);
   int send_saved_calibration(void);
   bool calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res);
