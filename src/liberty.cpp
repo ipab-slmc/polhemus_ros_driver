@@ -146,19 +146,20 @@ int Liberty::define_data_type(data_type_e data_type)
 
     command = c;
     size = sizeof(c) - 1;
+    retval = device_send(command, size);
   }
   else if (data_type == DATA_TYPE_EULER)
   {
     unsigned char c[] = "O*,8,9,11,3,5\r";  // euler
     command = c;
     size = sizeof(c) - 1;
+    retval = device_send(command, size);
   }
   else
   {
     return retval;
   }
 
-  retval = device_send(command, size);
   return retval;
 }
 
