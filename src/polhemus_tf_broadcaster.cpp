@@ -27,39 +27,49 @@
   Modified by C. E. Mower, 2017.
 */
 
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 #include <signal.h>
-
+#include <cstdlib>
 #include <sys/time.h>
 #include <time.h>
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <polhemus_ros_driver/liberty.hpp>
+#include <polhemus_ros_driver/polhemus.hpp>
+#include <polhemus_ros_driver/viper.hpp>
+#include <polhemus_ros_driver/viper_protocol.h>
+#include "polhemus_ros_driver/liberty_protocol.h"
 
-#include "liberty.h"
-#include "protocol.h"
 
 /* Vendor 0x0f44 -> Polhemus */
 #define VENDOR 0xf44
 
+#define VPUSB_MAX_DISCOVERABLE 16
+
 /* Product 0xff20 -> Liberty v2 Motion Tracker (with USB 2.0 using an EzUSB fx2
    chip)  after loading the firmware (it has ProductId 0xff21 before) */
-#define PRODUCT 0xff20
+#define LIBERTY_PRODUCT 0xff20
+#define VIPER_PRODUCT 0xbf01
 
-/* make control character out of ordinary character */
-#define control(c) ((c) & 0x1f)
 
-static int count_bits(uint16_t v) {
-  int c;
-  for (c = 0; v; c++)
-    {
-      v &= v - 1; // clear the least significant bit set
-    }
-  return c;
-}
+typedef struct _vp_usbdevinfo {
+  int usbDevIndex;
+  uint8_t usbBusNum;
+  uint8_t usbDevNum;
+  uint16_t usbVID;
+  uint16_t usbPID;
+  uint8_t usbNumInterfaces;
+  uint8_t ep_in;
+  uint8_t ep_out;
+  uint16_t epout_maxPktsize;
+
+  _vp_usbdevinfo() : usbDevIndex(-1), usbBusNum(0), usbDevNum(0), usbVID(0), usbPID(0), usbNumInterfaces(0), ep_in(0), ep_out(0), epout_maxPktsize(64) {};
+
+}vp_usbdevinfo;
 
 /* main loop running? */
 static int go_on;
@@ -88,180 +98,360 @@ static void print_ascii(FILE *stream, const char *buf, size_t size) {
   fprintf(stream, "\n");
 }
 
-static struct usb_device *find_device_by_id(uint16_t vendor, uint16_t product) {
-  struct usb_bus *bus;
+void ReleaseUSB(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo)
+{
+  if ((usbhnd == 0) || (*usbhnd == 0))
+    return;
 
-  usb_find_busses();
-  usb_find_devices();
+  int r = 0;
+  for (int i = 0; i < usbinfo.usbNumInterfaces; i++)
+    r = libusb_release_interface(*usbhnd, i);
 
-  for (bus = usb_get_busses(); bus; bus = bus->next) {
-    struct usb_device *dev;
-    for (dev = bus->devices; dev; dev = dev->next) {
-      if (dev->descriptor.idVendor == vendor && dev->descriptor.idProduct == product)
-	return dev;
+  libusb_close (*usbhnd);
+  *usbhnd = 0;
+  usbinfo = vp_usbdevinfo();
+
+}
+
+void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep_in, uint8_t & ep_out,
+                    uint16_t & out_pktsize)
+{
+  for (int j = 0; j < conf_desc->interface[iface].num_altsetting; j++)
+  {
+    for (int k = 0; k < conf_desc->interface[iface].altsetting[j].bNumEndpoints; k++)
+    {
+      const struct libusb_endpoint_descriptor *p_ep;
+      p_ep = &conf_desc->interface[iface].altsetting[j].endpoint[k];
+      if ((p_ep->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK)
+          & (LIBUSB_TRANSFER_TYPE_BULK | LIBUSB_TRANSFER_TYPE_INTERRUPT))
+      {
+        if (p_ep->bEndpointAddress & LIBUSB_ENDPOINT_IN)
+        {
+          if (!ep_in)
+          {
+            //printf("Ep in is false, endpoinst address is: %d", p_ep->bEndpointAddress);
+            ep_in = p_ep->bEndpointAddress;
+          }
+        } else
+        {
+          if (!ep_out)
+          {
+            ep_out = p_ep->bEndpointAddress;
+            out_pktsize = p_ep->wMaxPacketSize;
+          }
+        }
+      }
+
     }
   }
-  return NULL;
 }
 
-static int request_num_of_stations(usb_dev_handle *handle, buffer_t *b) {
-  static char cmd[] = { control('u'), '0', '\r', '\0' };
-  active_station_state_response_t resp;
-  liberty_send(handle, cmd);
-  liberty_receive(handle, b, &resp, sizeof(resp));
 
-  if (resp.head.init_cmd == 21) {
-    return count_bits(resp.detected & resp.active);
+int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid, uint16_t pid,
+                     vp_usbdevinfo arrDevInfo[], std::size_t &arrcount)
+{
+  int r = 0;
+  ssize_t devcount = libusb_get_device_list(pctx, &devlist);
+  if (devcount < 0)
+    return (int) devcount; // returns error code < 0
+  //struct libusb_device *found = NULL;
+  //struct libusb_device_handle *found_dev_handle = NULL;
+  libusb_device *dev;
+  int iFoundCount = 0;
+
+  int iFoundArrIndex = -1;
+  int i = 0;
+  while ((dev = devlist[i]) != NULL)
+  {
+    struct libusb_device_descriptor desc;
+    r = libusb_get_device_descriptor(dev, &desc);
+    if (r < 0)
+      break;
+
+    if (desc.idVendor == vid && desc.idProduct == pid)
+    {
+      iFoundCount++;
+      iFoundArrIndex++;
+      // populate the array if size permits
+      if (iFoundCount <= (int) arrcount)
+      {
+        vp_usbdevinfo * p = &arrDevInfo[iFoundArrIndex];
+        p->usbDevIndex = i;
+        p->usbBusNum = libusb_get_bus_number(dev);
+        p->usbDevNum = libusb_get_device_address(dev);
+        p->usbVID = vid;
+        p->usbPID = pid;
+      }
+    }
+    i++;
   }
-  else {
-    return 0;
-  }
+
+  arrcount = iFoundCount;
+
+  return r;
 }
 
-/* sets the zenith of the hemisphere in direction of vector (x, y, z) */
-static void set_hemisphere(usb_dev_handle *handle, int x, int y, int z) {
-  char cmd[32];
-  snprintf(cmd, sizeof(cmd), "h*,%d,%d,%d\r", x, y, z);
-  liberty_send(handle, cmd);
+int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint16_t vid, uint16_t pid)
+{
+
+  int r = 0;
+
+  if (libusb_init (NULL))
+    return -1;
+
+  if (*usbhnd)
+    ReleaseUSB(usbhnd, usbinfo);
+
+  vp_usbdevinfo arrDevInfo[VPUSB_MAX_DISCOVERABLE];
+  std::size_t arrcount = VPUSB_MAX_DISCOVERABLE;
+  libusb_device **devlist;
+
+  if ((r = create_vip_list(NULL, devlist, vid, pid, arrDevInfo, arrcount)) < 0)
+    return r;
+
+  for (int d = 0; d < (int) arrcount; d++)
+  {
+    libusb_device * dev = devlist[arrDevInfo[d].usbDevIndex];
+    libusb_device_handle * handle = 0;
+    libusb_config_descriptor *conf_desc = 0;
+    uint8_t nb_ifaces = 0, claimed_ifaces = 0;
+    uint8_t ep_in = 0, ep_out = 0;
+    uint16_t out_pktsize = 0;
+
+    if ((r = libusb_open(dev, &handle)))
+    {
+    } else if ((r = libusb_get_config_descriptor(dev, 0, &conf_desc)))
+    {
+      libusb_close(handle);
+    } else
+    {
+      nb_ifaces = conf_desc->bNumInterfaces;
+      claimed_ifaces = 0;
+      for (uint8_t i = 0; (i < nb_ifaces) && (r == 0); i++)
+      {
+        if ((r = libusb_claim_interface(handle, (int) i)))
+        {
+        } else
+        {
+          claimed_ifaces++;
+
+          find_endpoints(conf_desc, (int) i, ep_in, ep_out, out_pktsize);
+        }
+      }
+
+      if (claimed_ifaces == nb_ifaces)
+      {
+        *usbhnd = handle;
+        usbinfo = arrDevInfo[d];
+        usbinfo.usbNumInterfaces = nb_ifaces;
+        usbinfo.ep_in = ep_in;
+        usbinfo.ep_out = ep_out;
+        usbinfo.epout_maxPktsize = out_pktsize;
+
+        break;
+      }
+    }
+
+    // clean up failed attempt before trying the next one.
+    if (claimed_ifaces != nb_ifaces)
+    {
+      for (int k = 0; k < nb_ifaces; k++)
+        libusb_release_interface(handle, k);
+    }
+    if (handle)
+      libusb_close(handle);
+
+    libusb_free_config_descriptor(conf_desc);
+  }
+
+  libusb_free_device_list(devlist, 1);
+
+  if (!usbhnd)
+    r = -99;
+
+  return r;
 }
+
 
 int main(int argc, char** argv) {
-
+  libusb_device_handle *g_usbhnd = 0;
+  vp_usbdevinfo g_usbinfo;
   int i, nstations;
   double x_hs, y_hs, z_hs;
-  struct usb_device *dev;
-  usb_dev_handle *handle;
-  buffer_t buf;
   struct timeval tv;
-
-  // Setup polhemus
-  usb_init();
-
-  dev = find_device_by_id(VENDOR, PRODUCT);
-  if (!dev) {
-    fprintf(stderr, "Could not find the Polhemus Liberty device.\n");
-    abort();
-  }
-
-  handle = usb_open(dev);
-  if (!handle) {
-    fprintf(stderr, "Could not get a handle to the Polhemus Liberty device.\n");
-    abort();
-  }
-
-  if (!liberty_init(handle)) {
-    fprintf(stderr, "Could not initialize the Polhemus Liberty device.\n");
-    usb_close(handle);
-    return 1;
-  }
-
-  init_buffer(&buf);
-  liberty_send(handle, (char *)"f1\r"); // activate binary mode
-
-  nstations = request_num_of_stations(handle, &buf);
-  fprintf(stderr, "Found %d stations.\n\n", nstations);
-  if (nstations == 0) {    
-    usb_close(handle);
-    return 1;
-  }
+  uint16_t product_id;
+  std::string product_type;
+  Polhemus *device;
+  int retval = 0;
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
   ros::NodeHandle nh("/polhemus_tf_broadcaster");
 
 
-  /* define which information to get per sensor (called a station
-     by polhemus)
+  nh.getParam("/product_type", product_type);
+  if (product_type == "liberty")
+  {
+    retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, LIBERTY_PRODUCT);
+    if (retval)
+    {
+      //error connecting
+      fprintf(stderr, "Error connecting to device.\n\n");
+      return 1;
+    }
+	  product_id = LIBERTY_PRODUCT;
+	  device = new Liberty(LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
+	  fprintf(stderr, "Initialising liberty device.\n\n");
+    device->endpoint_in = LIBERTY_ENDPOINT_IN;
+    device->endpoint_out = LIBERTY_ENDPOINT_OUT;
+  }
+  else if (product_type == "viper")
+  {
+    retval = discover_vip_pid(&g_usbhnd, g_usbinfo, VENDOR, VIPER_PRODUCT);
+    if (retval)
+    {
+      //error connecting
+      fprintf(stderr, "Error connecting to device.\n\n");
+      return 1;
+    }
+	  product_id = VIPER_PRODUCT;
+	  device = new Viper(VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
+    fprintf(stderr, "Initialising Viper device.\n\n");
+    device->endpoint_in = g_usbinfo.ep_in;
+    device->endpoint_out = g_usbinfo.ep_out;
+  }
+  else
+  {
+	  fprintf(stderr, "Could not find a valid Polhemus device type on parameter server.\n");
+	  abort();
+  }
 
-     o* applies to all stations
+  device->endpoint_out_max_packet_size = g_usbinfo.epout_maxPktsize;
+  device->device_handle = g_usbhnd;
 
-     if this is changed, the station_t struct or (***) below has to be edited accordingly 
-  */
-  liberty_send(handle, (char *)"O*,8,9,11,3,7\r"); // station_t: quaternions
+  retval = device->device_reset();
+  if (retval)
+  {
+    fprintf(stderr, "Error resetting device.\n\n");
+    return 1;
+  }
 
-  /* set output hemisphere -- this will produce a response which we're
-     ignoring 
-  */
+  device->device_binary_mode(); // activate binary mode
+  retval = device->request_num_of_stations();
+  if (retval)
+  {
+    fprintf(stderr, "Error reading number of stations.\n\n");
+    return 1;
+  }
+  else
+  {
+    fprintf(stderr, "Found %d stations.\n\n", device->station_count);
+    nstations = device->station_count;
+  }
+
+  // define quaternion data type
+  retval = device->define_quat_data_type();
+  printf("Setting data type to quaternion\n");
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data type.\n\n");
+    return 1;
+  }
+
+  // Calibration service
+  ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
+  printf("Service ready to calibrate the sensors.\n");
+
+  ros::ServiceServer service2 = nh.advertiseService("persistent_cfg", &Polhemus::persist_srv, device);
+  printf("Service ready to persist cfg.\n");
+
+  // get param to set hemisphere
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
-  set_hemisphere(handle, x_hs, y_hs, z_hs);
 
-  /* switch output to centimeters */
-  //liberty_send(handle, "u1\r");
-  liberty_clear_input(handle); //right now, we just ignore the answer
+  printf("Setting the output hemisphere\n");
+  retval = device->set_hemisphere(x_hs, y_hs, z_hs);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting hemisphere.\n\n");
+    return 1;
+  }
 
-  // (***)
-  station_t *stations = (station_t*) (malloc(sizeof(station_t) * nstations));
-  //std::vector<station_t> stations(sizeof(station_t)*nstations);
-  if (!stations)
-    abort();
+  device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
   signal(SIGINT, signal_handler);
 
   go_on = 1;
 
-  /* enable continuous mode (get data points continously) */
-  liberty_send(handle, (char *)"c\r");
+  device->calibrate();
+
+  printf("Enabling continuous data mode...\n");
+  retval = device->device_data_mode(DATA_CONTINUOUS);
+  if (retval)
+  {
+    fprintf(stderr, "Error setting data mode to continuous.\n\n");
+    return 1;
+  }
 
   gettimeofday(&tv, NULL);
   printf("Begin time: %d.%06d\n", (unsigned int) (tv.tv_sec), (unsigned int) (tv.tv_usec));
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
-  ros::Rate r(240);
+  ros::Rate rate(240);
 
-  // Start main loop
+   // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
       break;
 
     // Update polhemus
-    // (***)
-    if (!liberty_receive(handle, &buf, stations, sizeof(station_t) * nstations)) {
-      fprintf(stderr, "Receive failed.\n");
-      return 2;
-    }
+    int sensor_count = device->receive_pno_data_frame();
+    if (sensor_count > 0)
+    {
+      /* Note: timestamp is the time in ms after the first read to the
+         system after turning it on
+         at 240Hz, the time between data sample is 1/240 = .00416_
+         seconds.
+         The framecount is a more exact way of finding out the time:
+         timestamp = framecount*1000/240 (rounded down to an int)*
+      */
 
-    /* Note: timestamp is the time in ms after the first read to the
-       system after turning it on
-       at 240Hz, the time between data sample is 1/240 = .00416_
-       seconds.
-       The framecount is a more exact way of finding out the time:
-       timestamp = framecount*1000/240 (rounded down to an int)* 
-    */
+      // Header info - acquired at same time = same timestamp
+      transformStamped.header.stamp = ros::Time::now();
+      transformStamped.header.frame_id = "polhemus_base";
+
+      for (i=0; i < sensor_count; i++)
+      {
+        device->fill_pno_data(&transformStamped, i);
+
+        // Broadcast frame
+        if (!retval)
+        {
+          br.sendTransform(transformStamped);
+        }
+      }
+    }
+    else
+    {
+      ROS_ERROR("Sensor count is 0");
+    }
     
-    // Header info - acquired at same time = same timestamp
-    transformStamped.header.stamp = ros::Time::now();
-    transformStamped.header.frame_id = "polhemus_base";
-
-    for (i=0; i < nstations; i++) {
-      // Header info
-      transformStamped.child_frame_id = "polhemus_station_" + std::to_string(i+1);
-	
-      // Set translation (conversion: inches -> meters)
-      transformStamped.transform.translation.x = 0.0254*stations[i].x;
-      transformStamped.transform.translation.y = 0.0254*stations[i].y;
-      transformStamped.transform.translation.z = 0.0254*stations[i].z;
-
-      // Set rotation
-      transformStamped.transform.rotation.w = stations[i].quaternion[0];
-      transformStamped.transform.rotation.x = stations[i].quaternion[1];
-      transformStamped.transform.rotation.y = stations[i].quaternion[2];
-      transformStamped.transform.rotation.z = stations[i].quaternion[3];
-
-      // Broadcast frame
-      br.sendTransform(transformStamped);
-    }
-
-    r.sleep();
+    ros::spinOnce();
+    rate.sleep();
   }
 
-  // Shutdown
-  liberty_send(handle, (char *)"p"); // stop continuous mode
-  usb_close(handle);
-  delete[] stations;
-  
+  retval = device->device_reset();
+  if (retval)
+  {
+    fprintf(stderr, "Error resetting device.\n\n");
+    return 1;
+  }
+  // // Shutdown
+  libusb_close(g_usbhnd);
+  delete device;
+
   return 0;
 }

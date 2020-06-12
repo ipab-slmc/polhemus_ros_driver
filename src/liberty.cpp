@@ -23,11 +23,7 @@
 */
 
 
-
-#include <string.h>
-#include <usb.h>
-
-#include "liberty.h"
+#include <polhemus_ros_driver/liberty.hpp>
 
 #ifdef DEBUG
 #include <stdio.h>
@@ -37,115 +33,150 @@
 #define warn(as...)
 #endif
 
-#define IN 0x88
-#define OUT 0x4
-#define INTERFACE 0
-#define CONFIGURATION 1
-#define TIMEOUT 1000
-
-void init_buffer(buffer_t *b)
+Liberty::Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
-    b->fill = 0;
 }
 
-
-static int liberty_write(usb_dev_handle *handle, char *buf, int size, int timeout)
-{
-    return usb_bulk_write(handle, OUT, buf, size, timeout);
-}
-
-int liberty_init(usb_dev_handle *handle)
-{
-    if (usb_set_configuration(handle, CONFIGURATION) != 0)
-        warn("could not set usb configuration to %d\n", CONFIGURATION);
-
-    if (usb_claim_interface(handle, INTERFACE) != 0) {
-        warn("could not claim usb interface %d\n", INTERFACE);
-        return 0;
-    }
-
-    /*
-    static char magic[] = { '*', '*', 0xff, 0x16, 0, 0, 0, 0 };
-    if (liberty_write(handle, magic, sizeof(magic), 0) != sizeof(magic)) {
-        warn("usb bulk write failed\n");
-        return 0;
-    }*/
-    liberty_reset(handle);
-    return 1;
-}
-
-int liberty_send(usb_dev_handle *handle, char *cmd)
-{
-    int size = strlen(cmd);
-    if (liberty_write(handle, cmd, size, TIMEOUT) != size) {
-        warn("sending cmd `%s' to device failed\n");
-        return 0;
-    }
-    return 1;
-}
-
-int liberty_read(usb_dev_handle *handle, void *buf, int size,
-                        int timeout)
-{
-    return usb_bulk_read(handle, IN, (char*)buf, size, timeout);
-}
-
-void liberty_clear_input(usb_dev_handle *handle)
-{
-    static char buf[1024];
-
-    while( liberty_read(handle, buf, sizeof(buf), TIMEOUT) > 0); 
-}
-
-void liberty_ignore_input(usb_dev_handle *handle, int count)
-{
-    static char buf[2048];
-    int i;
-    for (i = 0; i < count; ++i)
-        liberty_read(handle, buf, sizeof(buf), TIMEOUT);
-}
-
-int liberty_receive(usb_dev_handle *handle, buffer_t *b, void *buf, int size)
-{
-    //printf("liberty_receive: %u\n",size);
-    while (1) {
-
-        while (b->fill < size) {
-            int n_read = liberty_read(handle, b->buf + b->fill,
-                                  sizeof(b->buf) - b->fill, TIMEOUT);
-            warn("read %d\n", n_read);
-            if (n_read < 0) {
-                warn("error while reading from device (%d)", n_read);
-                return 0;
-            }
-            b->fill += n_read;
-        }
-
-        #ifdef DEBUG
-        fprintf(stderr, "- %c%c\n", b->buf[0], b->buf[1]);
-        #endif
-
-        if (b->buf[0] == 'L' && b->buf[1] == 'Y') {
-            memcpy(buf, b->buf, size);
-            memmove(b->buf, b->buf + size, b->fill - size);
-            b->fill -= size;
-            return 1;
-        } else {
-            warn("got corrupted data\n");
-            b->fill = 0;
-        }
-    }
-}
+Liberty::~Liberty(void) {}
 
 /** this resets previous `c' commands and puts the device in binary mode
  *
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
-void liberty_reset(usb_dev_handle *handle)
+
+int Liberty::device_reset(void)
 {
-    // reset c, this may produce "invalid command" answers
-    liberty_send(handle, (char *)"\rp\r");
-    // remove everything from input
-    liberty_clear_input(handle);
+  unsigned char command[] = "p";
+  int size = sizeof(command)-1;
+  int retval = device_send(command, size);
+  device_clear_input();
+  return retval;
 }
+
+void Liberty::device_binary_mode(void)
+{
+  unsigned char command[] = "f1\r";
+  int size = sizeof(command)-1;
+  device_send(command, size);
+}
+
+void Liberty::generate_data_structure(void)
+{
+  stations = (liberty_pno_frame_t*) (malloc(sizeof(liberty_pno_frame_t) * station_count));
+}
+
+int Liberty::device_data_mode(data_mode_e mode)
+{
+  int size;
+  int retval;
+  switch (mode)
+  {
+    case DATA_CONTINUOUS:
+    {
+      unsigned char command[] = "c\r";
+      size = sizeof(command)-1;
+      device_send(command, size);
+      return 0;
+    }
+    case DATA_SINGLE:
+    {
+      unsigned char command[] = "p";
+      size = sizeof(command)-1;
+      device_send(command, size);
+      return 0;
+    }
+    default:
+      return 0;
+  }
+}
+
+int Liberty::receive_pno_data_frame(void)
+{
+  g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
+  device_read(stations, g_nrxcount, true);
+  if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
+  {
+    return station_count;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count)
+{
+  // Set translation (conversion: inches -> meters)
+  transform->child_frame_id = "polhemus_station_" + std::to_string(count);
+  transform->transform.translation.x = 0.0254*stations[count].x;
+  transform->transform.translation.y = 0.0254*stations[count].y;
+  transform->transform.translation.z = 0.0254*stations[count].z;
+
+  // Set rotation
+  transform->transform.rotation.w = stations[count].quaternion[0];
+  transform->transform.rotation.x = stations[count].quaternion[1];
+  transform->transform.rotation.y = stations[count].quaternion[2];
+  transform->transform.rotation.z = stations[count].quaternion[3];
+}
+
+int Liberty::define_quat_data_type(void)
+{
+  int retval = 0;
+  unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
+  int size = sizeof(command)-1;
+  retval = device_send(command, size);
+  return retval;
+}
+
+int Liberty::request_num_of_stations(void)
+{
+  unsigned char command[] = { control('u'), '0', '\r', '\0' };
+  active_station_state_response_t resp;
+  int size = sizeof(command)-1;
+  int size_reply = sizeof(resp);
+  device_send(command, size);
+  device_read(&resp, size_reply, true);
+
+  if (resp.head.init_cmd == LIBERTY_ACTIVE_STATION_STATE_CMD) {
+    station_count = count_bits(resp.detected & resp.active);
+    return 0;
+  }
+  else {
+    return 1;
+  }
+}
+
+/* sets the zenith of the hemisphere in direction of vector (x, y, z) */
+int Liberty::set_hemisphere(int x, int y, int z)
+{
+  int retval = 0;
+  int negative_sign_counter = 0;
+  int initial_cmd_size = 10;
+
+  if (x < 0)
+    negative_sign_counter += 1;
+  if (y < 0)
+    negative_sign_counter += 1;
+  if (z < 0)
+    negative_sign_counter += 1;
+
+  int buf_cmd_size = initial_cmd_size + negative_sign_counter;
+  unsigned char command[buf_cmd_size];
+  sprintf((char *)command, "h*,%d,%d,%d\r", x, y, z);
+
+  int size = sizeof(command)-1;
+
+  retval = device_send(command, size);
+  return retval;
+}
+
+bool Liberty::calibrate(void)
+{
+  printf("Calibrating sensors..\n");
+  unsigned char command[] = "b*,0,0,0,0\r";
+  int size = sizeof(command)-1;
+  device_send(command, size);
+  return true;
+}
+
