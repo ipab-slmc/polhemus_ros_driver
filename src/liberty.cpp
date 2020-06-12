@@ -201,6 +201,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
   sprintf((char *)command, "h*,%d,%d,%d\r", x, y, z);
 
   int size = sizeof(command)-1;
+
   retval = device_send(command, size);
 
   return retval;
