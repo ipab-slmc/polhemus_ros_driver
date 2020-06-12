@@ -122,14 +122,16 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
     {
       const struct libusb_endpoint_descriptor *p_ep;
       p_ep = &conf_desc->interface[iface].altsetting[j].endpoint[k];
-
       if ((p_ep->bmAttributes & LIBUSB_TRANSFER_TYPE_MASK)
           & (LIBUSB_TRANSFER_TYPE_BULK | LIBUSB_TRANSFER_TYPE_INTERRUPT))
       {
         if (p_ep->bEndpointAddress & LIBUSB_ENDPOINT_IN)
         {
           if (!ep_in)
+          {
+            //printf("Ep in is false, endpoinst address is: %d", p_ep->bEndpointAddress);
             ep_in = p_ep->bEndpointAddress;
+          }
         } else
         {
           if (!ep_out)
@@ -298,8 +300,10 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = LIBERTY_PRODUCT;
-	  device = new Liberty();
+	  device = new Liberty(LIBERTY_RX_BUF_SIZE, LIBERTY_TX_BUF_SIZE);
 	  fprintf(stderr, "Initialising liberty device.\n\n");
+    device->endpoint_in = LIBERTY_ENDPOINT_IN;
+    device->endpoint_out = LIBERTY_ENDPOINT_OUT;
   }
   else if (product_type == "viper")
   {
@@ -311,8 +315,10 @@ int main(int argc, char** argv) {
       return 1;
     }
 	  product_id = VIPER_PRODUCT;
-	  device = new Viper();
+	  device = new Viper(VIPER_RX_BUF_SIZE, VIPER_RX_BUF_SIZE);
     fprintf(stderr, "Initialising Viper device.\n\n");
+    device->endpoint_in = g_usbinfo.ep_in;
+    device->endpoint_out = g_usbinfo.ep_out;
   }
   else
   {
@@ -320,9 +326,7 @@ int main(int argc, char** argv) {
 	  abort();
   }
 
-  device->endpoint_in = g_usbinfo.ep_in;
-  device->endpoint_out = g_usbinfo.ep_out;
-
+  device->endpoint_out_max_packet_size = g_usbinfo.epout_maxPktsize;
   device->device_handle = g_usbhnd;
 
   retval = device->device_reset();
@@ -345,27 +349,13 @@ int main(int argc, char** argv) {
     nstations = device->station_count;
   }
 
-  /* define which information to get per sensor (called a station
-     by polhemus)
-
-     o* applies to all stations
-
-     if this is changed, the station_t struct or (***) below has to be edited accordingly 
-  */
+  // define quaternion data type
   retval = device->define_quat_data_type();
   printf("Setting data type to quaternion\n");
   if (retval)
   {
     fprintf(stderr, "Error setting data type.\n\n");
     return 1;
-  }
-
-  retval = device->set_source(0);
-  printf("Setting source to 0\n");
-  if (retval)
-  {
-    fprintf(stderr, "Error source to 0.\n\n");
-    // return 1;
   }
 
   // Calibration service
@@ -375,9 +365,7 @@ int main(int argc, char** argv) {
   ros::ServiceServer service2 = nh.advertiseService("persistent_cfg", &Polhemus::persist_srv, device);
   printf("Service ready to persist cfg.\n");
 
-  /* set output hemisphere -- this will produce a response which we're
-     ignoring
-  */
+  // get param to set hemisphere
   nh.getParam("/x_hs", x_hs);
   nh.getParam("/y_hs", y_hs);
   nh.getParam("/z_hs", z_hs);
@@ -390,10 +378,6 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  /* switch output to centimeters */
-  //liberty_send(handle, "u1\r");
-//  device->device_clear_input(); //right now, we just ignore the answer
-
   device->generate_data_structure();
 
   /* set up signal handler to catch the interrupt signal */
@@ -401,7 +385,8 @@ int main(int argc, char** argv) {
 
   go_on = 1;
 
-  /* enable continuous mode (get data points continously) */
+  device->calibrate();
+
   printf("Enabling continuous data mode...\n");
   retval = device->device_data_mode(DATA_CONTINUOUS);
   if (retval)
@@ -415,15 +400,14 @@ int main(int argc, char** argv) {
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
-  ros::Rate rate(960);
+  ros::Rate rate(240);
 
-  // Start main loop
+   // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
       break;
 
     // Update polhemus
-    // (***)
     int sensor_count = device->receive_pno_data_frame();
     if (sensor_count > 0)
     {
@@ -450,13 +434,22 @@ int main(int argc, char** argv) {
         }
       }
     }
+    else
+    {
+      ROS_ERROR("Sensor count is 0");
+    }
     
     ros::spinOnce();
     rate.sleep();
   }
 
-  // Shutdown
-  device->device_data_mode(DATA_RESET); // stop continuous mode
+  retval = device->device_reset();
+  if (retval)
+  {
+    fprintf(stderr, "Error resetting device.\n\n");
+    return 1;
+  }
+  // // Shutdown
   libusb_close(g_usbhnd);
   delete device;
 

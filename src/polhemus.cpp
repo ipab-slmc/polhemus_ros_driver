@@ -18,6 +18,11 @@
 #define warn(as...)
 #endif
 
+Polhemus::Polhemus(uint16_t rx_buffer_size, uint16_t tx_buffer_size):
+  g_rxbuf(new uint8_t[rx_buffer_size]), g_txbuf(new uint8_t[tx_buffer_size])
+{
+}
+
 Polhemus::~Polhemus(void)
 {
 }
@@ -37,6 +42,7 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
   int retval = 0;
 
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
+
   if (retval)
   {
     //r = (r << 16) | E_VPERR_LIBUSB
@@ -47,7 +53,7 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
     retval = -1;// E_VPUSB_ERR_WRITE_COUNT_WRONG;
     fprintf(stderr, "write count wrong.\n\n");
   }
-  else if ((nActual % MAX_PACKET_SIZE) == 0)
+  else if ((nActual % endpoint_out_max_packet_size) == 0)
   {
     fprintf(stderr, "larger than max packet size.\n\n");
     retval = libusb_bulk_transfer(device_handle, endpoint_out, nullptr, 0, &nActual, timeout);
@@ -82,13 +88,13 @@ int Polhemus::device_send(uint8_t *cmd, int &count)
 
 int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 {
-  uint32_t timeout = VPUSB_READ_TIMEOUT_MS;
+  uint32_t timeout = 1000;
   int retval = 0;
   int nActual = 0;
+  unsigned char *pbuf_c = (unsigned char*) pbuf;
+  retval = libusb_bulk_transfer(device_handle, endpoint_in, pbuf_c, size, &nActual, timeout);
 
-  retval = libusb_bulk_transfer(device_handle, endpoint_in, (unsigned char*)pbuf, size, &nActual, timeout);
-
-  if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
+  if ((retval == LIBUSB_ERROR_TIMEOUT))
   {
     retval = 0;
     size = 0;
@@ -102,7 +108,7 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 
 void Polhemus::device_clear_input(void)
 {
-  g_nrxcount = RX_BUF_SIZE;
+  g_nrxcount = rx_buffer_size;
 
   while(g_nrxcount > 0)
   {

@@ -6,6 +6,7 @@
 #ifndef POLHEMUS_H
 #define POLHEMUS_H
 
+#include <ros/console.h>
 #include <libusb-1.0/libusb.h>
 #include <stdio.h>
 #include <string>
@@ -19,9 +20,6 @@
 #define TIMEOUT 1000
 #define CRC_BYTES 4
 #define SEUID 0
-#define MAX_PACKET_SIZE 64
-#define TX_BUF_SIZE  0x400
-#define RX_BUF_SIZE  0x400
 #define VPUSB_WRITE_TIMEOUT_MS 50
 #define VPUSB_READ_TIMEOUT_MS 300
 
@@ -42,6 +40,7 @@ typedef enum data_mode_e {
 class Polhemus
 {
 public:
+  Polhemus(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
   virtual ~Polhemus(void);
   int count_bits(uint16_t v);
 
@@ -73,9 +72,12 @@ public:
   int station_count;
   uint8_t endpoint_in;
   uint8_t endpoint_out;
+  uint16_t endpoint_out_max_packet_size;
+  uint16_t rx_buffer_size;
+  uint16_t tx_buffer_size;
   int g_ntxcount;
   int g_nrxcount;
-  uint8_t g_txbuf[TX_BUF_SIZE];
-  uint8_t g_rxbuf[RX_BUF_SIZE];
+  uint8_t* g_txbuf;
+  uint8_t* g_rxbuf;
 };
 #endif

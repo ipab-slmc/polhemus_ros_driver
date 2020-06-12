@@ -29,13 +29,16 @@
 #include "polhemus_ros_driver/liberty_protocol.h"
 #include <libusb-1.0/libusb.h>
 
-
 #define LIBERTY_ENDPOINT_IN 0x88
 #define LIBERTY_ENDPOINT_OUT 0x4
+#define LIBERTY_RX_BUF_SIZE  0x0200
+#define LIBERTY_TX_BUF_SIZE  0x0200
+#define LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD 67
+#define LIBERTY_ACTIVE_STATION_STATE_CMD 21
 
 class Liberty : public Polhemus {
 public:
-  Liberty(void);
+    Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
 	~Liberty(void);
 	int request_num_of_stations(void);
 	int device_reset(void);

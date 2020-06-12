@@ -33,10 +33,10 @@
 #define warn(as...)
 #endif
 
-
-Liberty::Liberty(void) : Polhemus()
+Liberty::Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(rx_buffer_size, tx_buffer_size)
 {
 }
+
 Liberty::~Liberty(void) {}
 
 /** this resets previous `c' commands and puts the device in binary mode
@@ -44,14 +44,14 @@ Liberty::~Liberty(void) {}
  *  beware: the device can be misconfigured in other ways too, though this will
  *  usually work
  */
+
 int Liberty::device_reset(void)
 {
-  // reset c, this may produce "invalid command" answers
-  unsigned char command[] = "\rp\r";
+  unsigned char command[] = "p";
   int size = sizeof(command)-1;
-  device_send(command, size);
-  // remove everything from input
+  int retval = device_send(command, size);
   device_clear_input();
+  return retval;
 }
 
 void Liberty::device_binary_mode(void)
@@ -68,21 +68,21 @@ void Liberty::generate_data_structure(void)
 
 int Liberty::device_data_mode(data_mode_e mode)
 {
-
   int size;
+  int retval;
   switch (mode)
   {
     case DATA_CONTINUOUS:
     {
       unsigned char command[] = "c\r";
-      size = sizeof(command);
+      size = sizeof(command)-1;
       device_send(command, size);
       return 0;
     }
     case DATA_SINGLE:
     {
       unsigned char command[] = "p";
-      size = sizeof(command);
+      size = sizeof(command)-1;
       device_send(command, size);
       return 0;
     }
@@ -93,12 +93,15 @@ int Liberty::device_data_mode(data_mode_e mode)
 
 int Liberty::receive_pno_data_frame(void)
 {
-  int retval = 0;
   g_nrxcount = sizeof(liberty_pno_frame_t) * station_count;
-  retval = device_read(stations, g_nrxcount, true);
-  if (retval)
+  device_read(stations, g_nrxcount, true);
+  if (stations->head.init_cmd == LIBERTY_CONTINUOUS_PRINT_OUTPUT_CMD)
   {
-    fprintf(stderr, "Receive failed.\n");
+    return station_count;
+  }
+  else
+  {
+    return 0;
   }
 }
 
@@ -119,51 +122,60 @@ int Liberty::fill_pno_data(geometry_msgs::TransformStamped *transform, int count
 
 int Liberty::define_quat_data_type(void)
 {
+  int retval = 0;
   unsigned char command[] = "O*,8,9,11,3,7\r";  // quaternions
   int size = sizeof(command)-1;
-  device_send(command, size);
-  return 0;
+  retval = device_send(command, size);
+  return retval;
 }
 
 int Liberty::request_num_of_stations(void)
 {
-  int retval = 0;
   unsigned char command[] = { control('u'), '0', '\r', '\0' };
   active_station_state_response_t resp;
   int size = sizeof(command)-1;
   int size_reply = sizeof(resp);
   device_send(command, size);
-  retval = device_read(&resp, size_reply, true);
-  fprintf(stderr, "Request num of station: init_cmd: %d, station: %d, error: %d, size: %d, active: %d, detected: %d\n", resp.head.init_cmd, resp.head.station, resp.head.error, resp.head.size, resp.active, resp.detected);
+  device_read(&resp, size_reply, true);
 
-  g_nrxcount = RX_BUF_SIZE;
-
-  //retval = device_read(g_rxbuf, g_nrxcount, true);
-
-  if (resp.head.init_cmd == 21) {
+  if (resp.head.init_cmd == LIBERTY_ACTIVE_STATION_STATE_CMD) {
     station_count = count_bits(resp.detected & resp.active);
-    return station_count;
+    return 0;
   }
   else {
-    fprintf(stderr, "init command returned: %d %d %d \n", resp.head.init_cmd, resp.head.station, resp.head.error);
-    return 0;
+    return 1;
   }
 }
 
 /* sets the zenith of the hemisphere in direction of vector (x, y, z) */
 int Liberty::set_hemisphere(int x, int y, int z)
 {
-  unsigned char command[32];
-  int size = sizeof(command);
-  snprintf((char *)command, size, "h*,%u,%u,%u\r", x, y, z);
-  device_send(command, size);
-  return true;
+  int retval = 0;
+  int negative_sign_counter = 0;
+  int initial_cmd_size = 10;
+
+  if (x < 0)
+    negative_sign_counter += 1;
+  if (y < 0)
+    negative_sign_counter += 1;
+  if (z < 0)
+    negative_sign_counter += 1;
+
+  int buf_cmd_size = initial_cmd_size + negative_sign_counter;
+  unsigned char command[buf_cmd_size];
+  sprintf((char *)command, "h*,%d,%d,%d\r", x, y, z);
+
+  int size = sizeof(command)-1;
+
+  retval = device_send(command, size);
+  return retval;
 }
 
 bool Liberty::calibrate(void)
 {
+  printf("Calibrating sensors..\n");
   unsigned char command[] = "b*,0,0,0,0\r";
-  int size = sizeof(command);
+  int size = sizeof(command)-1;
   device_send(command, size);
   return true;
 }
