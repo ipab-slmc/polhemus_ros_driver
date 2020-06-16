@@ -192,30 +192,13 @@ int Polhemus::send_saved_calibration(void)
           double roll, pitch, yaw;
           tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-//          fprintf(stderr, "quat x: %f\n", q[0]);
-//          fprintf(stderr, "quat y: %f\n", q[1]);
-//          fprintf(stderr, "quat z: %f\n", q[2]);
-//          fprintf(stderr, "quat w: %f\n", q[3]);
-//
-//          fprintf(stderr, "roll %f.\n", roll);
-//          fprintf(stderr, "pitch %f.\n", pitch);
-//          fprintf(stderr, "yaw %f.\n", yaw);
-
           roll = (roll * 180) / PI;
           pitch = (pitch * 180) / PI;
           yaw = (yaw * 180) / PI;
 
-//          fprintf(stderr, "roll %f.\n", roll);
-//          fprintf(stderr, "pitch %f.\n", pitch);
-//          fprintf(stderr, "yaw %f.\n", yaw);
-
           x = roll - x;
           y = pitch - y;
           z = yaw - z;
-
-//          fprintf(stderr, "x %f.\n", x);
-//          fprintf(stderr, "y %f.\n", y);
-//          fprintf(stderr, "z %f.\n", z);
 
           if (name == "viper")
           {
@@ -273,19 +256,10 @@ bool Polhemus::calibrate(void)
     double roll, pitch, yaw;
     tf2::Matrix3x3(q).getRPY(roll, pitch, yaw);
 
-//    fprintf(stderr, "quat x: %f\n", q[0]);
-//    fprintf(stderr, "quat y: %f\n", q[1]);
-//    fprintf(stderr, "quat z: %f\n", q[2]);
-//    fprintf(stderr, "quat w: %f\n", q[3]);
-
     // convert to degrees
     roll = (roll * 180) / 3.14;
     pitch = (pitch * 180) / 3.14;
     yaw = (yaw * 180) / 3.14;
-
-//    fprintf(stderr, "roll: %f\n", roll);
-//    fprintf(stderr, "pitch: %f\n", pitch);
-//    fprintf(stderr, "yaw: %f\n", yaw);
 
     ROS_INFO("[POLHEMUS] Calibrating station %d.", i);
 
