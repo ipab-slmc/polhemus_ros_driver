@@ -3,6 +3,7 @@
   <arg name="y_hs" default="0" />
   <arg name="z_hs" default="1" />
   <arg name="device_name" default="liberty"/>
+  <arg name="calibration_file" default="$(find polhemus_ros_driver)/config/$(arg device_name)_calibration.yaml"/>
 
   <node pkg="polhemus_ros_driver" type="polhemus_tf_broadcaster" name="polhemus_tf_broadcaster" output="screen"/>
 
@@ -11,4 +12,5 @@
   <param name="y_hs" value="$(arg y_hs)" type="int"/>
   <param name="z_hs" value="$(arg z_hs)" type="int"/>
   <param name="product_type" value="$(arg device_name)" type="string"/>
+  <rosparam command="load" file="$(arg calibration_file)" ns="calibration"/>
 </launch>

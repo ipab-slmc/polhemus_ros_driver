@@ -27,7 +27,6 @@
 
 #include <polhemus_ros_driver/polhemus.hpp>
 #include "polhemus_ros_driver/liberty_protocol.h"
-#include <libusb-1.0/libusb.h>
 
 #define LIBERTY_ENDPOINT_IN 0x88
 #define LIBERTY_ENDPOINT_OUT 0x4
@@ -38,19 +37,23 @@
 
 class Liberty : public Polhemus {
 public:
-    Liberty(uint16_t rx_buffer_size, uint16_t tx_buffer_size);
+   Liberty(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size);
 	~Liberty(void);
 	int request_num_of_stations(void);
 	int device_reset(void);
-	void device_binary_mode(void);
+	int device_binary_mode(void);
 	int device_data_mode(data_mode_e mode);
 	int receive_pno_data_frame(void);
-	int fill_pno_data(geometry_msgs::TransformStamped *transform, int station_id);
+	int fill_pno_data(geometry_msgs::TransformStamped *transform, int index);
 	void generate_data_structure(void);
-	int define_quat_data_type(void);
+	int define_data_type(data_type_e data_type);
 	int set_hemisphere(int x, int y, int z);
-	bool calibrate(void);
+	int set_boresight(bool reset_origin, int station, float arg_1, float arg_2, float arg_3, float arg_4 = 0);
+	int reset_boresight(void);
+	tf2::Quaternion get_quaternion(int index);
+	int send_saved_calibration(void);
 private:
 	liberty_pno_frame_t *stations;
+
 };
 #endif

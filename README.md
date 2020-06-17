@@ -1,4 +1,4 @@
-# Polhemus Liberty ROS Driver
+# Polhemus ROS Driver
 
 This package publishes coordinate transforms for the Polhemus Liberty sensors (stations) using the [`tf2` package](http://wiki.ros.org/tf2).
 
@@ -23,7 +23,8 @@ Note that you will require the `sudo` password.
 2. Open a new terminal.
 3. `$ roslaunch polhemus_ros_driver start.launch`
 
-Note: it may take 2-3 attempts to successfully start broadcasting `tf2` frames.
+The type of polhemus device can be selected by passing the parameter 'device_name', default value is liberty.
+Currently this driver works with the Liberty and Viper systems.
 
 ## View frames
 

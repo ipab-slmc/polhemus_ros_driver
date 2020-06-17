@@ -68,13 +68,13 @@ typedef struct __attribute__((packed)) viper_sensor_frame_info_t
     uint32_t    bfAuxInput   : 10;
 } viper_sensor_frame_info_t;
 
-typedef struct __attribute__((packed)) vipser_sensor_frame_data_t
+typedef struct __attribute__((packed)) viper_sensor_frame_data_t
 {
     viper_sensor_frame_info_t SFinfo;  // 4 bytes
     viper_pno_data_t pno;    // 28 bytes
 }viper_sensor_frame_data_t;
 
-typedef struct __attribute__((packed)) vipser_sensor_frame_data_a_t
+typedef struct __attribute__((packed)) viper_sensor_frame_data_a_t
 {
     viper_sensor_frame_info_t SFinfo;  // 4 bytes
     viper_pno_data_a_t pno_a;    // 28 bytes
