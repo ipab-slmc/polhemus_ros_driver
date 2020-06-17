@@ -45,11 +45,6 @@ int Polhemus::device_write(uint8_t *buf, int size, int timeout)
 
   retval = libusb_bulk_transfer(device_handle, endpoint_out, buf, size, &nActual, timeout);
 
-  for (int i=0; i < nActual; i++)
-  {
-    ROS_DEBUG("SEND byte %d: %d", i, int(buf[i]));
-  }
-
   if (retval != 0)
   {
     ROS_ERROR("[POLHEMUS] USB write failed with code %d.", retval);
@@ -104,11 +99,6 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
   unsigned char *pbuf_c = (unsigned char*) pbuf;
 
   retval = libusb_bulk_transfer(device_handle, endpoint_in, pbuf_c, size, &nActual, timeout);
-
-  for (int i=0; i < nActual; i++)
-  {
-    ROS_DEBUG("RECEIVE byte %d: %d", i, int(pbuf_c[i]));
-  }
 
   if ((retval == LIBUSB_ERROR_TIMEOUT) && bTOisErr)
   {
