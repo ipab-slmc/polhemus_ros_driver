@@ -3,14 +3,17 @@
   <arg name="y_hs" default="0" />
   <arg name="z_hs" default="1" />
   <arg name="device_name" default="liberty"/>
-  <arg name="calibration_file" default="$(find polhemus_ros_driver)/config/$(arg device_name)_calibration.yaml"/>
+  <arg name="boresight_calibration_file_path" default="$(find polhemus_ros_driver)/config"/>
+  <arg name="boresight_calibration_file_name" default="$(arg device_name)_calibration.yaml"/>
+  <arg name="boresight_calibration_file" default="$(arg boresight_calibration_file_path)/$(arg boresight_calibration_file_name)"/>
 
-  <node pkg="polhemus_ros_driver" type="polhemus_tf_broadcaster" name="polhemus_tf_broadcaster" output="screen"/>
+  <node pkg="polhemus_ros_driver" type="polhemus_tf_broadcaster" name="polhemus_tf_broadcaster" output="screen">
+    <rosparam param="boresight_calibration_file_path" subst_value="True">$(arg boresight_calibration_file_path)</rosparam>
+    <param name="x_hs" value="$(arg x_hs)" type="int"/>
+    <param name="y_hs" value="$(arg y_hs)" type="int"/>
+    <param name="z_hs" value="$(arg z_hs)" type="int"/>
+    <param name="product_type" value="$(arg device_name)" type="string"/>
+  </node>
 
-  <!--Set output hemisphere parameters-->
-  <param name="x_hs" value="$(arg x_hs)" type="int"/>
-  <param name="y_hs" value="$(arg y_hs)" type="int"/>
-  <param name="z_hs" value="$(arg z_hs)" type="int"/>
-  <param name="product_type" value="$(arg device_name)" type="string"/>
-  <rosparam command="load" file="$(arg calibration_file)" ns="calibration"/>
+  <rosparam command="load" file="$(arg boresight_calibration_file)" ns="calibration"/>
 </launch>
