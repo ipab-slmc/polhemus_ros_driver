@@ -265,17 +265,17 @@ bool Polhemus::calibrate(std::string boresight_calibration_file_path)
 
   ROS_INFO("Calibration file saved at: %s\n", boresight_calibration_file_path.c_str());
 
-  std::string cmd("rosparam dump");
+  std::string cmd("rosparam dump ");
   cmd += boresight_calibration_file_path;
 
   if (name == "viper")
   {
-    cmd += "/config/viper_calibration.yaml /calibration";
+    cmd += "/viper_calibration.yaml /calibration";
     system(cmd.c_str());
   }
   else
   {
-    cmd += "/config/liberty_calibration.yaml /calibration";
+    cmd += "/liberty_calibration.yaml /calibration";
     system(cmd.c_str());
   }
 
