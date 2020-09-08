@@ -223,7 +223,7 @@ int Polhemus::send_saved_calibration(void)
   return 0;
 }
 
-bool Polhemus::calibrate(void)
+bool Polhemus::calibrate(std::string boresight_calibration_file)
 {
   bool retval = false;
 
@@ -263,14 +263,11 @@ bool Polhemus::calibrate(void)
     nh->setParam(z_name, yaw);
   }
 
-  if (name == "viper")
-  {
-    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/viper_calibration.yaml /calibration");
-  }
-  else
-  {
-    system(" echo 'Calibration file saved at: ' $(rospack find polhemus_ros_driver)/config/; rosparam dump $(rospack find polhemus_ros_driver)/config/liberty_calibration.yaml /calibration");
-  }
+  ROS_INFO("[POLHEMUS] Calibration file saved at: %s\n", boresight_calibration_file.c_str());
+
+  std::string cmd("rosparam dump ");
+  cmd += boresight_calibration_file + " /calibration";
+  system(cmd.c_str());
 
   int ret = set_boresight(false, -1, 0, 0, 0);
 
@@ -300,10 +297,10 @@ bool Polhemus::calibrate(void)
   return true;
 }
 
-bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res)
+bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res, std::string boresight_calibration_file)
 {
   ROS_INFO("[POLHEMUS] Calibration request...");
-  res.success = calibrate();
+  res.success = calibrate(boresight_calibration_file);
   return true;
 }
 

@@ -278,14 +278,21 @@ int main(int argc, char** argv) {
   struct timeval tv;
   uint16_t product_id;
   std::string product_type;
+  std::string boresight_calibration_file;
   Polhemus *device;
   int retval = RETURN_ERROR;
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
-  ros::NodeHandle nh("/polhemus_tf_broadcaster");
+  ros::NodeHandle nh;
+  ros::NodeHandle private_nh("~");
 
-  nh.getParam("/product_type", product_type);
+  private_nh.getParam("product_type", product_type);
+
+  if (!private_nh.getParam("boresight_calibration_file", boresight_calibration_file))
+  {
+    ROS_ERROR("[POLHEMUS] Could not get boresight calibration file");
+  }
 
   if (product_type == "liberty")
   {
@@ -370,12 +377,17 @@ int main(int argc, char** argv) {
   }
 
   // Calibration service
-  ros::ServiceServer service = nh.advertiseService("calibration", &Polhemus::calibrate_srv, device);
+  ros::ServiceServer service =
+          private_nh.advertiseService<polhemus_ros_driver::calibrate::Request,
+                                      polhemus_ros_driver::calibrate::Response>("calibration",
+                                                                                boost::bind(&Polhemus::calibrate_srv,
+                                                                                device, _1, _2,
+                                                                                boresight_calibration_file));
   ROS_INFO("[POLHEMUS] Service ready to calibrate the sensors.");
 
-  nh.getParam("/x_hs", x_hs);
-  nh.getParam("/y_hs", y_hs);
-  nh.getParam("/z_hs", z_hs);
+  private_nh.getParam("x_hs", x_hs);
+  private_nh.getParam("y_hs", y_hs);
+  private_nh.getParam("z_hs", z_hs);
 
   ROS_INFO("[POLHEMUS] Setting the output hemisphere");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
@@ -415,7 +427,7 @@ int main(int argc, char** argv) {
 
   int flag = 0;
 
-   // Start main loop
+  // Start main loop
   while(ros::ok()) {
     if (go_on == 0)
       break;
