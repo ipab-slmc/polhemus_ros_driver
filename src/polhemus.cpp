@@ -269,7 +269,7 @@ bool Polhemus::calibrate(std::string boresight_calibration_file)
   
   if (system(cmd.c_str()))
   {
-    ROS_INFO("[POLHEMUS] Error saving calibration.");
+    ROS_ERROR("[POLHEMUS] Error saving calibration.");
   }
   else
   {
