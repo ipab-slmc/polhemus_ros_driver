@@ -20,6 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 )
 
+catkin_python_setup()
+
 add_service_files(
   FILES
   calibrate.srv
@@ -43,13 +45,13 @@ include_directories(
   ${LIBUSB_1_INCLUDE_DIRS}
 )
 
-add_executable(polhemus_tf_broadcaster src/polhemus_tf_broadcaster.cpp)
+add_executable(polhemus_tf_broadcaster src/polhemus_ros_driver/polhemus_tf_broadcaster.cpp)
 add_dependencies(polhemus_tf_broadcaster polhemus_ros_driver_generate_messages_cpp)
 
 add_library(polhemus
-  src/liberty.cpp
-  src/viper.cpp
-  src/polhemus.cpp
+  src/polhemus_ros_driver/liberty.cpp
+  src/polhemus_ros_driver/viper.cpp
+  src/polhemus_ros_driver/polhemus.cpp
 )
 
 add_dependencies(polhemus polhemus_ros_driver_generate_messages_cpp)
