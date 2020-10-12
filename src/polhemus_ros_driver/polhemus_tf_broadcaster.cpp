@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <sys/time.h>
 #include <time.h>
+#include <vector>
 #include <ros/ros.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -196,7 +197,8 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
 
   if (arrcount == 0)
   {
-    ROS_ERROR("[POLHEMUS] No Polhemus devices found. Please check that device is connected.\n");
+    ROS_ERROR("[POLHEMUS] Expected device not found. Please check that device is connected and 'product_type' "
+        "parameter is set correctly.\n");
     return RETURN_ERROR;
   }
 
@@ -278,6 +280,7 @@ int main(int argc, char** argv) {
   struct timeval tv;
   uint16_t product_id;
   std::string product_type;
+  std::string hands;
   std::string boresight_calibration_file;
   Polhemus *device;
   int retval = RETURN_ERROR;
@@ -288,6 +291,7 @@ int main(int argc, char** argv) {
   ros::NodeHandle private_nh("~");
 
   private_nh.getParam("product_type", product_type);
+  private_nh.getParam("hands", hands);
 
   if (!private_nh.getParam("boresight_calibration_file", boresight_calibration_file))
   {
@@ -301,7 +305,7 @@ int main(int argc, char** argv) {
     if (retval == RETURN_ERROR)
     {
       //error connecting
-      ROS_ERROR("[POLHEMUS] Error connecting to device.");
+      ROS_ERROR("[POLHEMUS] Error connecting to liberty device.");
       return 0;
     }
 
@@ -317,7 +321,7 @@ int main(int argc, char** argv) {
     if (retval == RETURN_ERROR)
     {
       //error connecting
-      ROS_ERROR("[POLHEMUS] Error connecting to device.\n");
+      ROS_ERROR("[POLHEMUS] Error connecting to viper device.\n");
       return 0;
     }
 
@@ -366,6 +370,12 @@ int main(int argc, char** argv) {
     nstations = device->station_count;
   }
 
+  if ((hands == "both" && nstations != 2*SENSORS_PER_GLOVE) || (hands != "both" && nstations != SENSORS_PER_GLOVE))
+  {
+    ROS_ERROR("[POLHEMUS] Number of sensors detected do not match the number expected.");
+    return 1;
+  }
+
   // define quaternion data type
   ROS_INFO("[POLHEMUS] Setting data type to quaternion");
   retval = device->define_data_type(DATA_TYPE_QUAT);
@@ -384,6 +394,12 @@ int main(int argc, char** argv) {
                                                                                 device, _1, _2,
                                                                                 boresight_calibration_file));
   ROS_INFO("[POLHEMUS] Service ready to calibrate the sensors.");
+
+  ros::ServiceServer service_2 =
+            private_nh.advertiseService<polhemus_ros_driver::set_source::Request,
+                                        polhemus_ros_driver::set_source::Response>("setting_source",
+                                                                                  boost::bind(&Polhemus::src_select_srv,
+                                                                                  device, _1, _2));
 
   private_nh.getParam("x_hs", x_hs);
   private_nh.getParam("y_hs", y_hs);
@@ -423,9 +439,12 @@ int main(int argc, char** argv) {
 
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped;
+  std::vector<geometry_msgs::TransformStamped> tf_queue;
+  tf_queue.reserve(16);
   ros::Rate rate(240);
 
   int flag = 0;
+  int station_number = 0;
 
   // Start main loop
   while(ros::ok()) {
@@ -472,18 +491,45 @@ int main(int argc, char** argv) {
 
       // Header info - acquired at same time = same timestamp
       transformStamped.header.stamp = ros::Time::now();
-      transformStamped.header.frame_id = "polhemus_base";
 
       for (i=0; i < sensor_count; i++)
       {
-        retval = device->fill_pno_data(&transformStamped, i);
-
+        station_number = i;
+        retval = device->fill_pno_data(&transformStamped, station_number);
+        if (product_type == "viper")
+        {
+          if (hands == "right")
+          {
+            transformStamped.header.frame_id = "polhemus_base_0";
+          }
+          else if (hands == "left")
+          {
+            transformStamped.header.frame_id = "polhemus_base_1";
+          }
+          else if (hands == "both")
+          {
+            if (station_number < 8)
+            {
+              transformStamped.header.frame_id = "polhemus_base_0";
+            }
+            else
+            {
+              transformStamped.header.frame_id = "polhemus_base_1";
+            }
+          }
+        }
+        else
+        {
+          transformStamped.header.frame_id = "polhemus_base";
+        }
         // Broadcast frame
         if (retval == 0)
         {
-          br.sendTransform(transformStamped);
+          tf_queue.push_back(transformStamped);
         }
       }
+      br.sendTransform(tf_queue);
+      tf_queue.clear();
     }
     ros::spinOnce();
     rate.sleep();
