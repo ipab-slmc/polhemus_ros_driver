@@ -277,14 +277,21 @@ int Viper::reset_boresight(void)
   return retval;
 }
 
-tf2::Quaternion Viper::get_quaternion(int index)
+tf2::Quaternion Viper::get_station_quaternion(int station_id)
 {
-  tf2::Quaternion q(
-      pno.SensFrame(index)->pno.ori[1],
-      pno.SensFrame(index)->pno.ori[2],
-      pno.SensFrame(index)->pno.ori[3],
-      pno.SensFrame(index)->pno.ori[0]);
-  return q;
+  if (pno.SensFrame(station_id) != NULL)
+  {
+    tf2::Quaternion q(
+        pno.SensFrame(station_id)->pno.ori[1],
+        pno.SensFrame(station_id)->pno.ori[2],
+        pno.SensFrame(station_id)->pno.ori[3],
+        pno.SensFrame(station_id)->pno.ori[0]);
+    return q;
+  }
+  else
+  {
+    throw std::runtime_error("Could not retrieve current sensor orientation, empty sensor frame!");
+  }
 }
 
 int Viper::set_source(int source, int station_id)
