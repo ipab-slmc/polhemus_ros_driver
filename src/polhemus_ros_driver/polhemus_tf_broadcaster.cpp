@@ -45,6 +45,7 @@
 #include <polhemus_ros_driver/viper_protocol.h>
 #include "polhemus_ros_driver/liberty_protocol.h"
 
+#include <string>
 
 /* Vendor 0x0f44 -> Polhemus */
 #define VENDOR 0xf44
@@ -58,7 +59,8 @@
 
 #define FIRST_STATION_NUMBER_LINKED_TO_LEFT_HAND 8
 
-typedef struct _vp_usbdevinfo {
+typedef struct _vp_usbdevinfo
+{
   int usbDevIndex;
   uint8_t usbBusNum;
   uint8_t usbDevNum;
@@ -69,14 +71,19 @@ typedef struct _vp_usbdevinfo {
   uint8_t ep_out;
   uint16_t epout_maxPktsize;
 
-  _vp_usbdevinfo() : usbDevIndex(-1), usbBusNum(0), usbDevNum(0), usbVID(0), usbPID(0), usbNumInterfaces(0), ep_in(0), ep_out(0), epout_maxPktsize(64) {};
-
-}vp_usbdevinfo;
+  _vp_usbdevinfo() : usbDevIndex(-1), usbBusNum(0), usbDevNum(0), usbVID(0),
+  usbPID(0), usbNumInterfaces(0), ep_in(0), ep_out(0), epout_maxPktsize(64)
+  {
+  };
+}
+vp_usbdevinfo;
 
 static bool keep_main_loop_running;
 
-static void signal_handler(int s) {
-  switch (s) {
+static void signal_handler(int s)
+{
+  switch (s)
+  {
   case SIGINT:
     keep_main_loop_running = false;
     break;
@@ -92,10 +99,9 @@ void release_usb(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo)
   for (int i = 0; i < usbinfo.usbNumInterfaces; i++)
     r = libusb_release_interface(*usbhnd, i);
 
-  libusb_close (*usbhnd);
+  libusb_close(*usbhnd);
   *usbhnd = 0;
   usbinfo = vp_usbdevinfo();
-
 }
 
 void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep_in, uint8_t & ep_out,
@@ -116,7 +122,8 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
           {
             ep_in = p_ep->bEndpointAddress;
           }
-        } else
+        }
+        else
         {
           if (!ep_out)
           {
@@ -125,7 +132,6 @@ void find_endpoints(libusb_config_descriptor *conf_desc, int iface, uint8_t & ep
           }
         }
       }
-
     }
   }
 }
@@ -137,7 +143,7 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
   int retval = RETURN_ERROR;
   ssize_t devcount = libusb_get_device_list(pctx, &devlist);
   if (devcount < 0)
-    return (int) devcount; // returns error code < 0
+    return static_cast<int>(devcount);  // returns error code < 0
 
   libusb_device *dev;
   int iFoundCount = 0;
@@ -156,7 +162,7 @@ int create_vip_list(libusb_context* pctx, libusb_device **&devlist, uint16_t vid
       iFoundCount++;
       iFoundArrIndex++;
       // populate the array if size permits
-      if (iFoundCount <= (int) arrcount)
+      if (iFoundCount <= static_cast<int>(arrcount))
       {
         vp_usbdevinfo * p = &arrDevInfo[iFoundArrIndex];
         p->usbDevIndex = i;
@@ -200,8 +206,7 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
     return RETURN_ERROR;
   }
 
-
-  for (int d = 0; d < (int) arrcount; d++)
+  for (int d = 0; d < static_cast<int>(arrcount); d++)
   {
     libusb_device * dev = devlist[arrDevInfo[d].usbDevIndex];
     libusb_device_handle * handle = 0;
@@ -212,7 +217,6 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
 
     if ((retval = libusb_open(dev, &handle)))
     {
-      ;
     }
     else if ((retval = libusb_get_config_descriptor(dev, 0, &conf_desc)))
     {
@@ -224,15 +228,14 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
       claimed_ifaces = 0;
       for (uint8_t i = 0; (i < nb_ifaces) && (retval == 0); i++)
       {
-        if ((retval = libusb_claim_interface(handle, (int) i)))
+        if ((retval = libusb_claim_interface(handle, static_cast<int>(i))))
         {
-          ;
         }
         else
         {
           claimed_ifaces++;
 
-          find_endpoints(conf_desc, (int) i, ep_in, ep_out, out_pktsize);
+          find_endpoints(conf_desc, static_cast<int>(i), ep_in, ep_out, out_pktsize);
         }
       }
 
@@ -269,7 +272,8 @@ int discover_vip_pid(libusb_device_handle **usbhnd, vp_usbdevinfo &usbinfo, uint
   return retval;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   libusb_device_handle *g_usbhnd = 0;
   vp_usbdevinfo g_usbinfo;
   int i, nstations;
@@ -356,7 +360,7 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  device->device_binary_mode(); // activate binary mode
+  device->device_binary_mode();  // activate binary mode
 
   retval = device->request_num_of_stations();
   if (RETURN_ERROR == retval)
@@ -369,7 +373,7 @@ int main(int argc, char** argv) {
     ROS_INFO("[POLHEMUS] Found %d stations.", device->station_count);
     nstations = device->station_count;
   }
-  
+
   // define quaternion data type
   ROS_INFO("[POLHEMUS] Setting data type to quaternion");
   retval = device->define_data_type(DATA_TYPE_QUAT);
@@ -443,7 +447,8 @@ int main(int argc, char** argv) {
   int station_number = 0;
 
   // Start main loop
-  while(ros::ok()) {
+  while (ros::ok())
+  {
     if (!keep_main_loop_running)
       break;
 
@@ -495,9 +500,9 @@ int main(int argc, char** argv) {
         if (product_type == "viper")
         {
           // We publish the first 5 sensors with frame_id polhemus_base_0 since they are
-          // linked to the first source and to the right hand. The rest of the sensors 
+          // linked to the first source and to the right hand. The rest of the sensors
           // are linked to the second source placed on the left hand.
-          // TODO: check if there is there is a way to get that info from api
+          // TODO(mykolas): check if there is there is a way to get that info from api
           if (station_number < FIRST_STATION_NUMBER_LINKED_TO_LEFT_HAND)
           {
             transformStamped.header.frame_id = "polhemus_base_0";

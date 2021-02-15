@@ -1,4 +1,3 @@
-
 /*
 
  Communication library for a Polhemus Liberty v2 (tm) Motion tracker
@@ -22,23 +21,29 @@
 
 */
 
-
 #include <polhemus_ros_driver/liberty.hpp>
+
+#include <string>
 
 #ifdef DEBUG
 #include <stdio.h>
-#define warn(as...) { fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \
-    fprintf(stderr, as); }
+#define warn(as...) \
+{ \
+  fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \
+  fprintf(stderr, as); \
+}
 #else
 #define warn(as...)
 #endif
 
-
-Liberty::Liberty(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size) : Polhemus(name, rx_buffer_size, tx_buffer_size)
+Liberty::Liberty(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size)
+    : Polhemus(name, rx_buffer_size, tx_buffer_size)
 {
 }
 
-Liberty::~Liberty(void) {}
+Liberty::~Liberty(void)
+{
+}
 
 /** this resets previous `c' commands and puts the device in binary mode
  *
@@ -67,7 +72,7 @@ int Liberty::device_binary_mode(void)
 
 void Liberty::generate_data_structure(void)
 {
-  stations = (liberty_pno_frame_t*) (malloc(sizeof(liberty_pno_frame_t) * station_count));
+  stations = reinterpret_cast<liberty_pno_frame_t*>(malloc(sizeof(liberty_pno_frame_t) * station_count));
 }
 
 int Liberty::device_data_mode(data_mode_e mode)
@@ -198,7 +203,7 @@ int Liberty::set_hemisphere(int x, int y, int z)
 
   int buf_cmd_size = initial_cmd_size + negative_sign_counter;
   unsigned char command[buf_cmd_size];
-  sprintf((char *)command, "h*,%d,%d,%d\r", x, y, z);
+  snprintf(reinterpret_cast<char *>(command), sizeof(command), "h*,%d,%d,%d\r", x, y, z);
 
   int size = sizeof(command)-1;
 
@@ -215,11 +220,15 @@ int Liberty::set_boresight(bool reset_origin, int station, float arg_1, float ar
 
   if (station == -1)
   {
-    snprintf((char *)command, size, "b*,%d,%d,%d,%d\r", int(arg_1), int(arg_2), int(arg_3), reset_origin);
+    snprintf(reinterpret_cast<char *>(command), size, "b*,%d,%d,%d,%d\r",
+      static_cast<int>(arg_1), static_cast<int>(arg_2),
+      static_cast<int>(arg_3), reset_origin);
   }
   else
   {
-    snprintf((char *)command, size, "b%d,%d,%d,%d,%d\r", station, int(arg_1), int(arg_2), int(arg_3), reset_origin);
+    snprintf(reinterpret_cast<char *>(command), size, "b%d,%d,%d,%d,%d\r",
+      station, static_cast<int>(arg_1), static_cast<int>(arg_2),
+      static_cast<int>(arg_3), reset_origin);
   }
 
   size = 1;
@@ -269,20 +278,23 @@ int Liberty::send_saved_calibration(int number_of_hands)
       ROS_WARN("[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!");
       break;
     }
-    
+
     ROS_INFO("[POLHEMUS] Reading saved calibration data and calibrating station %d...", station_id);
 
     // retrieve calibration angles
     float calibrated_roll;
-    std::string calibrated_roll_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_roll";
+    std::string calibrated_roll_param_name = "/calibration/" + name +
+      "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_roll";
     nh->getParam(calibrated_roll_param_name, calibrated_roll);
 
     float calibrated_pitch;
-    std::string calibrated_pitch_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_pitch";
+    std::string calibrated_pitch_param_name = "/calibration/" + name +
+      "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_pitch";
     nh->getParam(calibrated_pitch_param_name, calibrated_pitch);
 
     float calibrated_yaw;
-    std::string calibrated_yaw_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_yaw";
+    std::string calibrated_yaw_param_name = "/calibration/" + name +
+      "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_yaw";
     nh->getParam(calibrated_yaw_param_name, calibrated_yaw);
 
     // retrieve current sensor orientation
@@ -337,10 +349,10 @@ bool Liberty::calibrate(std::string boresight_calibration_file)
 
   std::string cmd("rosparam dump ");
   cmd += boresight_calibration_file + " /calibration";
-  
+
   int dump_calibration_param_status = system(cmd.c_str());
   if (dump_calibration_param_status < 0)
-  { 
+  {
     ROS_ERROR("[POLHEMUS] Error saving calibration.");
     return -1;
   }

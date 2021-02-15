@@ -3,8 +3,7 @@
 * Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 */
 
-
-#include <string.h>
+#include <string>
 #include <libusb-1.0/libusb.h>
 #include "polhemus_ros_driver/polhemus.hpp"
 #include <ros/console.h>
@@ -12,8 +11,11 @@
 
 #ifdef DEBUG
 #include <stdio.h>
-#define warn(as...) { fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \
-    fprintf(stderr, as); }
+#define warn(as...) \
+{ \
+    fprintf(stderr, "%s:%d: ", __FILE__, __LINE__); \
+    fprintf(stderr, as); \
+}
 #else
 #define warn(as...)
 #endif
@@ -29,11 +31,12 @@ Polhemus::~Polhemus(void)
 {
 }
 
-int Polhemus::count_bits(uint16_t v) {
+int Polhemus::count_bits(uint16_t v)
+{
   int c;
   for (c = 0; v; c++)
     {
-      v &= v - 1; // clear the least significant bit set
+      v &= v - 1;  // clear the least significant bit set
     }
   return c;
 }
@@ -117,7 +120,7 @@ int Polhemus::device_read(void *pbuf, int &size, bool bTOisErr)
 void Polhemus::device_clear_input(void)
 {
   g_nrxcount = rx_buffer_size;
-  while(g_nrxcount > 0)
+  while (g_nrxcount > 0)
   {
     device_read(g_rxbuf, g_nrxcount, true);
   }
@@ -176,7 +179,7 @@ int Polhemus::set_device_for_calibration(void)
 
 int Polhemus::save_current_calibration_to_file(int station_id, int station_number)
 {
-   ROS_INFO("[POLHEMUS] Calibrating station %d.", station_id);
+  ROS_INFO("[POLHEMUS] Calibrating station %d.", station_id);
 
   tf2::Quaternion station_quaternion = get_station_quaternion(station_number);
 
@@ -189,24 +192,29 @@ int Polhemus::save_current_calibration_to_file(int station_id, int station_numbe
   station_yaw = (station_yaw * 180) / PI;
 
   // save values to config file
-  std::string calibrated_roll_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_roll";
+  std::string calibrated_roll_param_name = "/calibration/" + name +
+    "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_roll";
   nh->setParam(calibrated_roll_param_name, station_roll);
 
-  std::string calibrated_pitch_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_pitch";
+  std::string calibrated_pitch_param_name = "/calibration/" + name +
+    "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_pitch";
   nh->setParam(calibrated_pitch_param_name, station_pitch);
 
-  std::string calibrated_yaw_param_name = "/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_yaw";
+  std::string calibrated_yaw_param_name = "/calibration/" + name +
+    "_calibration/rotations/station_" + std::to_string(station_id) + "/calibrated_yaw";
   nh->setParam(calibrated_yaw_param_name, station_yaw);
 }
 
-bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req, polhemus_ros_driver::calibrate::Response &res, std::string boresight_calibration_file)
+bool Polhemus::calibrate_srv(polhemus_ros_driver::calibrate::Request &req,
+    polhemus_ros_driver::calibrate::Response &res, std::string boresight_calibration_file)
 {
   ROS_INFO("[POLHEMUS] Calibration request...");
   res.success = calibrate(boresight_calibration_file);
   return true;
 }
 
-bool Polhemus::src_select_srv(polhemus_ros_driver::set_source::Request &req, polhemus_ros_driver::set_source::Response &res)
+bool Polhemus::src_select_srv(polhemus_ros_driver::set_source::Request &req,
+    polhemus_ros_driver::set_source::Response &res)
 {
   ROS_INFO("[POLHEMUS] Set source request...");
   if (set_source(req.source, req.sensor))
