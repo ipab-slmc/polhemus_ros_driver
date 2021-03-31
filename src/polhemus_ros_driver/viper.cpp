@@ -84,10 +84,10 @@ int Viper::receive_data_frame(viper_cmds_e cmd_type)
     CFrameInfo fi(g_rxbuf, g_nrxcount);
     if ((fi.cmd() != cmd_type) || !(fi.IsAck()))
     {
-      ROS_ERROR("[POLHEMUS] Error in message reply...\n");
-      ROS_DEBUG("reply cmd: %d\n", fi.cmd());
-      ROS_DEBUG("reply action: %d\n", fi.action());
-      ROS_DEBUG("cmd sent: %d\n", cmd_type);
+      ROS_ERROR("[POLHEMUS] Error in message reply...");
+      ROS_ERROR("reply cmd: %d", fi.cmd());
+      ROS_ERROR("reply action: %d", fi.action());
+      ROS_ERROR("cmd sent: %d", cmd_type);
       retval = RETURN_ERROR;
     }
   }
@@ -282,10 +282,12 @@ int Viper::reset_boresight(void)
   int nBytes = g_ntxcount;
   uint8_t *pbuf = g_txbuf;
   retval = device_send(pbuf, nBytes);
+
   if (retval == 0)
   {
     retval = receive_data_frame(cmd_type);
   }
+
   return retval;
 }
 
@@ -454,6 +456,10 @@ int Viper::send_saved_calibration(int number_of_hands)
 bool Viper::calibrate(std::string boresight_calibration_file)
 {
   int retval = RETURN_ERROR;
+
+  // set data mode to single to allow correct boresight reset
+  device_data_mode(DATA_SINGLE);
+
   retval = set_device_for_calibration();
   if (RETURN_ERROR == retval)
     return -1;
