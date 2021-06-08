@@ -27,7 +27,7 @@
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
-  <depend>libusb-1.0-0-dev</depend>
+  <depend>libusb-1.0-0</depend>
   <depend>fxload</depend>
   <depend>yaml</depend>
 </package>
