@@ -5,7 +5,7 @@ add_compile_options(-std=c++11)
 
 find_package(PkgConfig REQUIRED)
 
-pkg_check_modules(libusb-1.0 libusb-1.0 QUIET)
+pkg_check_modules(libusb-1.0-0 libusb-1.0-0 QUIET)
 
 if(NOT ${libusb_1_FOUND})
   message(FATAL_ERROR "Could not find libusb1")
