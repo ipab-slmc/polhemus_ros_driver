@@ -32,6 +32,11 @@ Viper::Viper(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size)
 
 Viper::~Viper(void) {}
 
+void Viper::device_init()
+{
+  source_select_service = nh->advertiseService("setting_source", &Viper::src_select_srv, this);
+}
+
 int Viper::device_reset(void)
 {
   int retval = device_data_mode(DATA_RESET);
@@ -387,7 +392,7 @@ int Viper::send_saved_calibration(int number_of_hands)
       ROS_ERROR("No pno frame");
     }
 
-    if (!nh->hasParam("/calibration/" + name + "_calibration/rotations/station_" + std::to_string(station_id)))
+    if (!nh->hasParam(name + "_calibration/rotations/station_" + std::to_string(station_id)))
     {
       ROS_WARN("[POLHEMUS] No previous calibration data available, please calibrate before proceeding!!!");
       break;
@@ -397,19 +402,19 @@ int Viper::send_saved_calibration(int number_of_hands)
 
     // retrieve calibration angles
     float calibrated_roll;
-    std::string calibrated_roll_param_name = "/calibration/" + name +
+    std::string calibrated_roll_param_name = name +
       "_calibration/rotations/station_" + std::to_string(station_id) +
       "/calibrated_roll";
     nh->getParam(calibrated_roll_param_name, calibrated_roll);
 
     float calibrated_pitch;
-    std::string calibrated_pitch_param_name = "/calibration/" + name +
+    std::string calibrated_pitch_param_name = name +
       "_calibration/rotations/station_" + std::to_string(station_id) +
       "/calibrated_pitch";
     nh->getParam(calibrated_pitch_param_name, calibrated_pitch);
 
     float calibrated_yaw;
-    std::string calibrated_yaw_param_name = "/calibration/" + name +
+    std::string calibrated_yaw_param_name = name +
       "_calibration/rotations/station_" + std::to_string(station_id) +
       "/calibrated_yaw";
     nh->getParam(calibrated_yaw_param_name, calibrated_yaw);
@@ -498,5 +503,27 @@ bool Viper::calibrate(std::string boresight_calibration_file)
     return retval;
   }
 
+  return true;
+}
+
+bool Viper::src_select_srv(polhemus_ros_driver::set_source::Request &req,
+    polhemus_ros_driver::set_source::Response &res)
+{
+  ROS_INFO("[POLHEMUS] Set source request...");
+  if (set_source(req.source, req.sensor))
+  {
+    res.success = false;
+  }
+  else
+  {
+    res.success = true;
+  }
+  return true;
+}
+
+bool Viper::persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res)
+{
+  ROS_INFO("[POLHEMUS] Making config persistent");
+  res.success = persist_commands();
   return true;
 }

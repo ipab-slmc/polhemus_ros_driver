@@ -21,6 +21,7 @@ class Viper: public Polhemus
 public:
   Viper(std::string name, uint16_t rx_buffer_size, uint16_t tx_buffer_size);
   ~Viper(void);
+  void device_init();
   int request_num_of_stations(void);
   int device_reset(void);
   int device_data_mode(data_mode_e mode);
@@ -28,6 +29,8 @@ public:
   int fill_pno_data(geometry_msgs::TransformStamped *transform, int &index);
   int define_data_type(data_type_e data_type);
   int set_hemisphere(int x, int y, int z);
+  bool src_select_srv(polhemus_ros_driver::set_source::Request &req, polhemus_ros_driver::set_source::Response &res);
+  ros::ServiceServer source_select_service;
 private:
   uint32_t calc_crc_bytes(uint8_t *data, uint32_t count);
   void crc_16(uint32_t * crc, uint32_t data);
@@ -42,6 +45,7 @@ private:
   bool calibrate(std::string boresight_calibration_file);
   int send_saved_calibration(int number_of_hands);
   bool persist_commands(void);
+  bool persist_srv(polhemus_ros_driver::persist::Request &req, polhemus_ros_driver::persist::Response &res);
   CVPSeuPno pno;
   uint32_t sensor_map;
 };

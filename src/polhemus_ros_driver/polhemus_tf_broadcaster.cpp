@@ -289,16 +289,15 @@ int main(int argc, char** argv)
 
   // Setup ros
   ros::init(argc, argv, "polhemus_tf_broadcaster");
-  ros::NodeHandle nh;
-  ros::NodeHandle private_nh("~");
+  ros::NodeHandle nh("~");
 
-  private_nh.getParam("product_type", product_type);
-  private_nh.getParam("hands", hands);
+  nh.getParam("product_type", product_type);
+  nh.getParam("hands", hands);
 
   if (hands == "both")
     number_of_hands = 2;
 
-  if (!private_nh.getParam("boresight_calibration_file", boresight_calibration_file))
+  if (!nh.getParam("boresight_calibration_file", boresight_calibration_file))
   {
     ROS_ERROR("[POLHEMUS] Could not get boresight calibration file");
   }
@@ -342,6 +341,8 @@ int main(int argc, char** argv)
 
   device->nh = &nh;
 
+  device->device_init();
+
   device->endpoint_out_max_packet_size = g_usbinfo.epout_maxPktsize;
 
   device->device_handle = g_usbhnd;
@@ -359,8 +360,6 @@ int main(int argc, char** argv)
     ROS_ERROR("[POLHEMUS] Error resetting boresight.");
     return -1;
   }
-
-  device->device_binary_mode();  // activate binary mode
 
   retval = device->request_num_of_stations();
   if (RETURN_ERROR == retval)
@@ -385,22 +384,16 @@ int main(int argc, char** argv)
 
   // Calibration service
   ros::ServiceServer boresight_calibration_service =
-          private_nh.advertiseService<polhemus_ros_driver::calibrate::Request,
-                                      polhemus_ros_driver::calibrate::Response>("calibration",
-                                                                                boost::bind(&Polhemus::calibrate_srv,
-                                                                                device, _1, _2,
-                                                                                boresight_calibration_file));
+          nh.advertiseService<polhemus_ros_driver::calibrate::Request,
+                              polhemus_ros_driver::calibrate::Response>("calibration",
+                                                                        boost::bind(&Polhemus::calibrate_srv,
+                                                                        device, _1, _2,
+                                                                        boresight_calibration_file));
   ROS_INFO("[POLHEMUS] Service ready to calibrate the sensors.");
 
-  ros::ServiceServer source_select_service =
-            private_nh.advertiseService<polhemus_ros_driver::set_source::Request,
-                                        polhemus_ros_driver::set_source::Response>("setting_source",
-                                                                                  boost::bind(&Polhemus::src_select_srv,
-                                                                                  device, _1, _2));
-
-  private_nh.getParam("x_hs", x_hs);
-  private_nh.getParam("y_hs", y_hs);
-  private_nh.getParam("z_hs", z_hs);
+  nh.getParam("x_hs", x_hs);
+  nh.getParam("y_hs", y_hs);
+  nh.getParam("z_hs", z_hs);
 
   ROS_INFO("[POLHEMUS] Setting the output hemisphere");
   retval = device->set_hemisphere(x_hs, y_hs, z_hs);
@@ -409,8 +402,6 @@ int main(int argc, char** argv)
     ROS_ERROR("[POLHEMUS] Error setting hemisphere.");
     return -1;
   }
-
-  device->generate_data_structure();
 
   ROS_INFO("[POLHEMUS] Enabling continuous data mode...");
   retval = device->device_data_mode(DATA_CONTINUOUS);

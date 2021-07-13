@@ -45,6 +45,12 @@ Liberty::~Liberty(void)
 {
 }
 
+void Liberty::device_init()
+{
+  stations = reinterpret_cast<liberty_pno_frame_t*>(malloc(sizeof(liberty_pno_frame_t) * station_count));
+  device_binary_mode();
+}
+
 /** this resets previous `c' commands and puts the device in binary mode
  *
  *  beware: the device can be misconfigured in other ways too, though this will
@@ -68,11 +74,6 @@ int Liberty::device_binary_mode(void)
   int size = sizeof(command) - 1;
   int retval = device_send(command, size);
   return retval;
-}
-
-void Liberty::generate_data_structure(void)
-{
-  stations = reinterpret_cast<liberty_pno_frame_t*>(malloc(sizeof(liberty_pno_frame_t) * station_count));
 }
 
 int Liberty::device_data_mode(data_mode_e mode)
