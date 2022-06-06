@@ -3,7 +3,7 @@
 # Copyright (C) 2020 Shadow Robot Company Ltd - All Rights Reserved. Proprietary and Confidential.
 # Unauthorized copying of the content in this file, via any medium is strictly prohibited.
 
-from __future__ import absolute_import
+from __future__ import absolute_import, division
 from math import pi
 
 
@@ -20,7 +20,7 @@ class SourcePoseCalibration(object):
         return [
             -(knuckle_to_source + self.CONST_SOURCE_X_OFFSET),
             0,
-            knuckle_thickness // 2 + self.CONST_SOURCE_Z_OFFSET
+            knuckle_thickness / 2 + self.CONST_SOURCE_Z_OFFSET
         ] + self.CONST_SOURCE_ORIENTATION
 
     # Currently orientation does not affect decalibration
