@@ -1,0 +1,11 @@
+#goal definition
+bool start
+string hand_side
+int8 time
+---
+#result definition
+bool success
+---
+#feedback
+float32 progress
+float32[] quality
