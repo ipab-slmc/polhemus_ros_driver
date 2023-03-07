@@ -29,7 +29,7 @@ add_service_files(
   calibrate.srv
   set_source.srv
   persist.srv
-  SetStaticCalibrationTFNew.srv
+  Publish.srv
 )
 
 add_action_files(
