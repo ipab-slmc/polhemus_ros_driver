@@ -1,0 +1,47 @@
+#  Copyright (C) 2022 Shadow Robot Company Ltd <software@shadowrobot.com>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+
+settings:
+  machine_type: medium
+  ubuntu:
+    version: focal
+  ros:
+    release: noetic
+  docker:
+    image: public.ecr.aws/shadowrobot/build-tools
+    tag: focal-noetic
+  template_project_name: template_unit_tests_and_code_coverage
+  toolset:
+    branch: lint
+    modules:
+      - check_cache
+      - code_coverage
+
+trunks:
+  - name: noetic-devel
+    jobs:
+      - name: code_coverage
+      - name: style_check
+        settings:
+          toolset:
+            modules:
+              - code_style_check
+              - check_license
+      - name: install_check
+        settings:
+          toolset:
+            modules:
+              - check_install

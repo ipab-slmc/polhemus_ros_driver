@@ -115,3 +115,7 @@ Ogre.log
 **/doc/*.log
 **/doc/*.synctex.gz
 **/doc/*.toc
+
+# Code Editors
+.idea
+.vscode
